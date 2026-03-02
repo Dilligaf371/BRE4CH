@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 420" fill="none">
+  <!--
+    BRE4CH Logo — Precise geometric triangle with S-shaped negative space
+    Three separated shapes with gaps forming the S-curve
+  -->
+  <defs>
+    <linearGradient id="chevG" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#909090"/>
+      <stop offset="100%" stop-color="#585858"/>
+    </linearGradient>
+    <linearGradient id="leftG" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#808080"/>
+      <stop offset="100%" stop-color="#b0b0b0"/>
+    </linearGradient>
+    <linearGradient id="rightG" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#484848"/>
+      <stop offset="100%" stop-color="#181818"/>
+    </linearGradient>
+  </defs>
+
+  <!-- CHEVRON (top arrow shape) - medium gray -->
+  <polygon points="200,18 115,170 160,170 200,95 240,170 285,170" fill="url(#chevG)"/>
+
+  <!-- LEFT BODY (lighter) - from left of chevron, curves down to bottom-left -->
+  <polygon points="105,192 160,192 196,240 148,380 52,380 52,280" fill="url(#leftG)"/>
+
+  <!-- RIGHT BODY (darker) - from right of chevron, down to bottom-right + bottom -->
+  <path d="M215,240 L240,192 348,280 348,380 148,380 196,300
+           C 200,290 202,285 215,240 Z"
+        fill="url(#rightG)"/>
+
+  <!-- Bottom center negative-space cutout -->
+  <polygon points="162,318 200,380 238,318" fill="url(#rightG)" opacity="0"/>
+</svg>

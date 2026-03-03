@@ -1,7 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, InfoWindow, Circle } from '@react-google-maps/api';
 import { infrastructure, epicFuryPositions, INFRA_COLORS, STATUS_COLORS } from '../data/mockData';
+import { SHELTERS } from './SheltersPanel';
 import type { InfrastructurePoint, MilitaryPosition, InfraType, InfraStatus } from '../data/mockData';
+import { useEventFeed } from '../hooks/useEventFeed';
 
 const mapContainerStyle = { width: '100%', height: '100%' };
 const center = { lat: 32.4279, lng: 53.688 };
@@ -35,7 +37,7 @@ const mapOptions: google.maps.MapOptions = {
   fullscreenControl: true,
   scaleControl: true,
   minZoom: 5,
-  maxZoom: 12,
+  maxZoom: 18,
   backgroundColor: '#0a0e14',
 };
 
@@ -638,6 +640,27 @@ function POICreationMenu({ coords, onConfirm, onCancel }: {
 
 // --------------- MAIN MAP ---------------
 
+// Match event target names to infrastructure point names/ids
+function matchEventToInfra(target: string): string[] {
+  const lower = target.toLowerCase();
+  return infrastructure
+    .filter(inf => {
+      const name = inf.name.toLowerCase();
+      const nameEn = inf.nameEn.toLowerCase();
+      return lower.includes(name) || lower.includes(nameEn)
+        || name.includes(lower) || nameEn.includes(lower);
+    })
+    .map(inf => inf.id);
+}
+
+// Glow state: which infra points are glowing and when to stop
+interface GlowState {
+  infraId: string;
+  color: string;       // glow color based on event type
+  intensity: number;    // 0-1 pulsing
+  expiresAt: number;
+}
+
 export function MapView() {
   const [selectedInf, setSelectedInf] = useState<string | null>(null);
   const [selectedPos, setSelectedPos] = useState<string | null>(null);
@@ -645,7 +668,101 @@ export function MapView() {
   const [selectedCustom, setSelectedCustom] = useState<string | null>(null);
   const [newPOICoords, setNewPOICoords] = useState<[number, number] | null>(null);
   const [opStatuses, setOpStatuses] = useState<OpStatus[]>([]);
+  const [glowStates, setGlowStates] = useState<GlowState[]>([]);
+  const [selectedShelter, setSelectedShelter] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const events = useEventFeed(50);
+  const prevEventCountRef = useRef(0);
+
+  // Event glow colors by attack type
+  const EVENT_GLOW_COLORS: Record<string, string> = {
+    ballistic: '#ef4444',  // red
+    drone: '#06b6d4',      // cyan
+    cyber: '#a855f7',      // purple
+    artillery: '#eab308',  // yellow
+    cruise: '#f97316',     // orange
+    sabotage: '#ec4899',   // pink
+  };
+
+  // Watch for new events and trigger glow on matching infra points
+  useEffect(() => {
+    if (events.length <= prevEventCountRef.current) {
+      prevEventCountRef.current = events.length;
+      return;
+    }
+
+    // New events = difference from previous count
+    const newCount = events.length - prevEventCountRef.current;
+    const newEvents = events.slice(0, Math.min(newCount, 5)); // max 5 new at a time
+    prevEventCountRef.current = events.length;
+
+    const newGlows: GlowState[] = [];
+
+    for (const evt of newEvents) {
+      // Try to match by target name
+      let matchedIds = matchEventToInfra(evt.target);
+
+      // Also try matching by details text
+      if (matchedIds.length === 0) {
+        matchedIds = matchEventToInfra(evt.details);
+      }
+
+      // If no specific match, pick random infra points to glow (simulates general theater activity)
+      if (matchedIds.length === 0) {
+        const random = infrastructure[Math.floor(Math.random() * infrastructure.length)];
+        matchedIds = [random.id];
+      }
+
+      for (const id of matchedIds) {
+        newGlows.push({
+          infraId: id,
+          color: EVENT_GLOW_COLORS[evt.type] || '#ef4444',
+          intensity: 1,
+          expiresAt: Date.now() + 8000, // glow for 8 seconds
+        });
+      }
+    }
+
+    if (newGlows.length > 0) {
+      setGlowStates(prev => [...newGlows, ...prev].slice(0, 30));
+    }
+  }, [events]);
+
+  // Animate glow pulse and clean up expired glows
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGlowStates(prev => {
+        const now = Date.now();
+        return prev
+          .filter(g => now < g.expiresAt)
+          .map(g => {
+            const remaining = (g.expiresAt - now) / 8000;
+            // Pulsing: sin wave that fades out
+            const pulse = Math.sin(now / 300) * 0.3 + 0.7;
+            return { ...g, intensity: remaining * pulse };
+          });
+      });
+    }, 150); // update ~6.7 times/sec for smooth animation
+    return () => clearInterval(interval);
+  }, []);
+
+  // Listen for shelter navigation events from Header dropdown
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && mapRef.current) {
+        mapRef.current.panTo({ lat: detail.lat, lng: detail.lng });
+        mapRef.current.setZoom(14);
+        setSelectedShelter(detail.id);
+        setSelectedInf(null);
+        setSelectedPos(null);
+        setSelectedCustom(null);
+        setNewPOICoords(null);
+      }
+    };
+    window.addEventListener('navigate-to-shelter', handler);
+    return () => window.removeEventListener('navigate-to-shelter', handler);
+  }, []);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   const { isLoaded, loadError } = useJsApiLoader({
@@ -714,6 +831,7 @@ export function MapView() {
     setSelectedInf(null);
     setSelectedPos(null);
     setSelectedCustom(null);
+    setSelectedShelter(null);
     setNewPOICoords(null);
   }, []);
 
@@ -801,6 +919,28 @@ export function MapView() {
           />
         ))}
 
+        {/* Event glow rings — pulse when strikes/events happen */}
+        {glowStates.map((glow, idx) => {
+          const inf = infrastructure.find(i => i.id === glow.infraId);
+          if (!inf) return null;
+          return (
+            <Circle
+              key={`glow-${idx}-${glow.infraId}`}
+              center={{ lat: inf.coords[0], lng: inf.coords[1] }}
+              radius={35000 + glow.intensity * 20000}
+              options={{
+                fillColor: glow.color,
+                fillOpacity: glow.intensity * 0.25,
+                strokeColor: glow.color,
+                strokeWeight: 2 + glow.intensity * 2,
+                strokeOpacity: glow.intensity * 0.8,
+                clickable: false,
+                zIndex: 5,
+              }}
+            />
+          );
+        })}
+
         {/* Custom POI markers */}
         {customPOIs.map((poi) => (
           <Circle
@@ -871,6 +1011,93 @@ export function MapView() {
             />
           );
         })}
+
+        {/* Abu Dhabi Shelter markers */}
+        {SHELTERS.map((shelter) => (
+          <Circle
+            key={`shelter-${shelter.id}`}
+            center={{ lat: shelter.lat, lng: shelter.lng }}
+            radius={600}
+            options={{
+              fillColor: shelter.status === 'OPEN' ? '#22c55e' : shelter.status === 'STANDBY' ? '#f59e0b' : '#ef4444',
+              fillOpacity: 0.6,
+              strokeColor: '#22c55e',
+              strokeWeight: 2,
+              strokeOpacity: 0.9,
+              clickable: true,
+              zIndex: 25,
+            }}
+            onClick={() => {
+              setSelectedInf(null);
+              setSelectedPos(null);
+              setSelectedCustom(null);
+              setNewPOICoords(null);
+              setSelectedShelter(selectedShelter === shelter.id ? null : shelter.id);
+            }}
+          />
+        ))}
+
+        {/* Shelter outer glow ring */}
+        {SHELTERS.filter(s => s.status === 'OPEN').map((shelter) => (
+          <Circle
+            key={`shelter-glow-${shelter.id}`}
+            center={{ lat: shelter.lat, lng: shelter.lng }}
+            radius={1000}
+            options={{
+              fillColor: '#22c55e',
+              fillOpacity: 0.08,
+              strokeColor: '#22c55e',
+              strokeWeight: 1,
+              strokeOpacity: 0.3,
+              clickable: false,
+              zIndex: 24,
+            }}
+          />
+        ))}
+
+        {/* Shelter InfoWindows */}
+        {SHELTERS
+          .filter((s) => selectedShelter === s.id)
+          .map((shelter) => (
+            <InfoWindow
+              key={`shelter-info-${shelter.id}`}
+              position={{ lat: shelter.lat, lng: shelter.lng }}
+              onCloseClick={() => setSelectedShelter(null)}
+              options={{ pixelOffset: new google.maps.Size(0, -5), maxWidth: 320 }}
+            >
+              <div style={{ minWidth: 250, padding: 6, fontFamily: "'JetBrains Mono', monospace", background: '#0d1117', color: '#e6edf3', borderRadius: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: shelter.status === 'OPEN' ? '#22c55e' : shelter.status === 'STANDBY' ? '#f59e0b' : '#ef4444', boxShadow: `0 0 8px ${shelter.status === 'OPEN' ? '#22c55e' : '#f59e0b'}` }} />
+                  <span style={{ fontWeight: 700, color: '#22c55e', fontSize: 12 }}>SHELTER</span>
+                  <span style={{ fontSize: 9, color: shelter.status === 'OPEN' ? '#22c55e' : '#f59e0b', background: shelter.status === 'OPEN' ? '#22c55e20' : '#f59e0b20', padding: '1px 6px', borderRadius: 3, fontWeight: 600, marginLeft: 'auto' }}>
+                    {shelter.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>{shelter.name}</div>
+                <div style={{ fontSize: 10, color: '#8b949e', marginBottom: 6, direction: 'rtl' }}>{shelter.nameAr}</div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontSize: 9, color: '#6e7681' }}>TYPE</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e' }}>{shelter.type}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: '#6e7681' }}>CAPACITY</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#06b6d4' }}>{shelter.capacity.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: '#6e7681' }}>LEVELS</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b' }}>B{shelter.levels}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 9, color: '#8b949e', padding: '4px 6px', background: '#161b22', borderRadius: 3, lineHeight: 1.4 }}>
+                  {shelter.notes}
+                </div>
+                <div style={{ fontSize: 8, color: '#6e7681', marginTop: 4 }}>
+                  {shelter.district} // {shelter.lat.toFixed(4)}°N {shelter.lng.toFixed(4)}°E
+                </div>
+              </div>
+            </InfoWindow>
+          ))}
 
         {/* Infrastructure InfoWindows with Cyber Ops */}
         {infrastructure
@@ -970,6 +1197,10 @@ export function MapView() {
           </span>
           <span className="text-[10px] font-mono text-red-400">
             {epicFuryPositions.filter(p => p.type === 'hostile').length} HOSTILE
+          </span>
+          <div className="w-px h-3 bg-[var(--palantir-border)]" />
+          <span className="text-[10px] font-mono text-green-400">
+            {SHELTERS.filter(s => s.status === 'OPEN').length} SHELTERS
           </span>
           {customPOIs.length > 0 && (
             <>

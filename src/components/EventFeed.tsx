@@ -617,7 +617,26 @@ function EventRow({ event }: { event: AttackEvent }) {
             {event.status}
           </span>
           <span className={`text-[9px] font-mono ${config.color} uppercase`}>{event.type}</span>
-          <span className="text-[9px] font-mono text-[var(--palantir-text-muted)] ml-auto">{time}</span>
+          {/* Clickable source badge */}
+          {event.source && (
+            event.sourceUrl ? (
+              <a
+                href={event.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-0.5 text-[8px] font-mono text-cyan-400/80 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-1.5 py-0.5 rounded border border-cyan-500/20 hover:border-cyan-500/40 transition-all cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-2.5 h-2.5" />
+                {event.source}
+              </a>
+            ) : (
+              <span className="text-[8px] font-mono text-cyan-400/60 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                {event.source}
+              </span>
+            )
+          )}
+          <span className="text-[9px] font-mono text-[var(--palantir-text-muted)] ml-auto tabular-nums">{time}</span>
         </div>
         <p className="text-[10px] text-[var(--palantir-text-muted)] leading-relaxed truncate group-hover:text-[var(--palantir-text)] transition-colors">
           {event.details}

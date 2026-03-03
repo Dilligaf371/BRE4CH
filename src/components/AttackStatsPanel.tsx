@@ -201,6 +201,9 @@ export function AttackStatsPanel() {
   const [alliedOpen, setAlliedOpen] = useState<Record<string, boolean>>(() => {
     try { const s = localStorage.getItem('roar-allied-open'); if (s) return JSON.parse(s); } catch {} return {};
   });
+  const [coalitionOpen, setCoalitionOpen] = useState(() => {
+    try { return localStorage.getItem('roar-coalition-open') === 'true'; } catch {} return false;
+  });
   const [cyberOpen, setCyberOpen] = useState(() => {
     try { return localStorage.getItem('roar-cyber-open') === 'true'; } catch {} return false;
   });
@@ -208,6 +211,7 @@ export function AttackStatsPanel() {
 
   useEffect(() => { localStorage.setItem('roar-metrics-open', String(metricsOpen)); }, [metricsOpen]);
   useEffect(() => { localStorage.setItem('roar-allied-open', JSON.stringify(alliedOpen)); }, [alliedOpen]);
+  useEffect(() => { localStorage.setItem('roar-coalition-open', String(coalitionOpen)); }, [coalitionOpen]);
   useEffect(() => { localStorage.setItem('roar-cyber-open', String(cyberOpen)); }, [cyberOpen]);
 
   // Simulate ongoing cyber activity counter
@@ -450,53 +454,87 @@ export function AttackStatsPanel() {
         </div>
       </div>
 
-      {/* Allied Attack Feeds — USA, Israel, KSA, UAE */}
-      {ALLIED_FEEDS.map((feed) => (
-        <div key={feed.id} className="bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg overflow-hidden">
-          <button
-            onClick={() => toggleAllied(feed.id)}
-            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-white/5 transition-colors"
-          >
-            <span className="text-sm">{feed.flag}</span>
-            <span className={`font-semibold text-xs uppercase tracking-wider ${feed.color}`}>
-              {feed.name} Feed
-            </span>
-            <div className="ml-auto flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[9px] font-mono text-green-400">LIVE</span>
-              {alliedOpen[feed.id] ? (
-                <ChevronUp className="w-3.5 h-3.5 text-[var(--palantir-text-muted)]" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--palantir-text-muted)]" />
-              )}
-            </div>
-          </button>
-
-          {alliedOpen[feed.id] && (
-            <div className={`p-2 space-y-1.5 border-t ${feed.borderColor} animate-fade-in`}>
-              {feed.stats.map((stat, idx) => {
-                const Icon = stat.icon;
-                return (
-                  <StatCard
-                    key={idx}
-                    icon={<Icon className={`w-3 h-3 ${stat.color}`} />}
-                    label={stat.label}
-                    value={stat.value}
-                    color={stat.color}
-                    bgColor={stat.bg}
-                    small
-                  />
-                );
-              })}
-              <div className="px-3 py-1">
-                <span className="text-[8px] font-mono text-[var(--palantir-text-muted)]">
-                  SRC: {feed.source}
-                </span>
-              </div>
-            </div>
+      {/* Coalition Feeds — Collapsible */}
+      <div className="bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg overflow-hidden">
+        <button
+          onClick={() => setCoalitionOpen(!coalitionOpen)}
+          className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-white/5 transition-colors"
+        >
+          {coalitionOpen ? (
+            <ChevronUp className="w-3.5 h-3.5 text-cyan-400" />
+          ) : (
+            <Menu className="w-3.5 h-3.5 text-cyan-400" />
           )}
-        </div>
-      ))}
+          <Shield className="w-4 h-4 text-cyan-400" />
+          <span className="font-semibold text-xs uppercase tracking-wider text-[var(--palantir-text)]">
+            Coalition Feed
+          </span>
+          <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">{ALLIED_FEEDS.length} nations</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[9px] font-mono text-green-400">LIVE</span>
+          </div>
+        </button>
+
+        {coalitionOpen && (
+          <div className="border-t border-[var(--palantir-border)] space-y-1 p-1.5 animate-fade-in">
+            {ALLIED_FEEDS.map((feed) => (
+              <div key={feed.id} className="rounded-lg border border-[var(--palantir-border)]/50 overflow-hidden">
+                <button
+                  onClick={() => toggleAllied(feed.id)}
+                  className="w-full px-2.5 py-1.5 flex items-center gap-2 hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-sm">{feed.flag}</span>
+                  <span className={`font-semibold text-[10px] uppercase tracking-wider ${feed.color}`}>
+                    {feed.name} Feed
+                  </span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[8px] font-mono text-green-400">LIVE</span>
+                    {alliedOpen[feed.id] ? (
+                      <ChevronUp className="w-3 h-3 text-[var(--palantir-text-muted)]" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 text-[var(--palantir-text-muted)]" />
+                    )}
+                  </div>
+                </button>
+
+                {alliedOpen[feed.id] && (
+                  <div className={`p-2 space-y-1.5 border-t ${feed.borderColor} animate-fade-in`}>
+                    {feed.stats.map((stat, idx) => {
+                      const Icon = stat.icon;
+                      return (
+                        <StatCard
+                          key={idx}
+                          icon={<Icon className={`w-3 h-3 ${stat.color}`} />}
+                          label={stat.label}
+                          value={stat.value}
+                          color={stat.color}
+                          bgColor={stat.bg}
+                          small
+                        />
+                      );
+                    })}
+                    <div className="px-3 py-1">
+                      <span className="text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                        SRC: {feed.source}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!coalitionOpen && (
+          <div className="px-3 py-1.5 border-t border-[var(--palantir-border)]/50 flex items-center gap-2">
+            <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">
+              {ALLIED_FEEDS.map(f => f.flag).join(' ')} — {ALLIED_FEEDS.length} feeds active
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Cyber Operations Section */}
       <div className="bg-[var(--palantir-surface)] border border-purple-500/30 rounded-lg overflow-hidden">

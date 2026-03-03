@@ -515,6 +515,221 @@ if (LIVEUAMAP_API_KEY) {
   console.warn('[LIVEUAMAP] No API key — proxy endpoint disabled');
 }
 
+// ══════════════════════════════════════════════════════════════
+// SOURCE REFRESH MACRO — auto-updates all sources every 5 min
+// ══════════════════════════════════════════════════════════════
+const SOURCE_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+const sourceStatus = {
+  lastRefresh: null,
+  nextRefresh: null,
+  refreshCount: 0,
+  sources: {
+    liveuamap: { status: 'idle', lastFetch: null, events: 0, error: null },
+    osint_twitter: { status: 'idle', lastFetch: null, items: 0, error: null },
+    centcom: { status: 'idle', lastFetch: null, items: 0, error: null },
+    reuters: { status: 'idle', lastFetch: null, items: 0, error: null },
+    aljazeera: { status: 'idle', lastFetch: null, items: 0, error: null },
+  },
+  running: false,
+};
+
+// RSS/Atom feed parser (lightweight, no dependency)
+async function fetchRSSHeadlines(feedUrl, sourceName, maxItems = 10) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(feedUrl, {
+      headers: { 'User-Agent': 'BRE4CH-ROAR/1.0', 'Accept': 'application/rss+xml, application/xml, text/xml' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+
+    // Extract <item> or <entry> titles + links
+    const items = [];
+    const itemRegex = /<(?:item|entry)>([\s\S]*?)<\/(?:item|entry)>/gi;
+    let match;
+    while ((match = itemRegex.exec(xml)) !== null && items.length < maxItems) {
+      const block = match[1];
+      const title = block.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/i)?.[1]?.trim() || '';
+      const link = block.match(/<link[^>]*href="([^"]*)"[^>]*>/i)?.[1]
+        || block.match(/<link[^>]*>(.*?)<\/link>/i)?.[1]?.trim() || '';
+      const pubDate = block.match(/<(?:pubDate|published|updated)>(.*?)<\/(?:pubDate|published|updated)>/i)?.[1]?.trim() || '';
+      if (title) items.push({ title, link, pubDate, source: sourceName });
+    }
+    return items;
+  } catch (err) {
+    console.error(`[REFRESH] ${sourceName} RSS error: ${err.message}`);
+    return [];
+  }
+}
+
+// Fetch latest from CENTCOM press releases
+async function refreshCentcom() {
+  sourceStatus.sources.centcom.status = 'fetching';
+  try {
+    const items = await fetchRSSHeadlines('https://www.centcom.mil/MEDIA/PRESS-RELEASES/Press-Release-RSS-Feed/', 'CENTCOM', 10);
+    sourceStatus.sources.centcom = { status: 'ok', lastFetch: Date.now(), items: items.length, error: null };
+    return items;
+  } catch (err) {
+    sourceStatus.sources.centcom = { status: 'error', lastFetch: Date.now(), items: 0, error: err.message };
+    return [];
+  }
+}
+
+// Fetch latest from Reuters World
+async function refreshReuters() {
+  sourceStatus.sources.reuters.status = 'fetching';
+  try {
+    const items = await fetchRSSHeadlines('https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best', 'Reuters', 10);
+    sourceStatus.sources.reuters = { status: 'ok', lastFetch: Date.now(), items: items.length, error: null };
+    return items;
+  } catch (err) {
+    sourceStatus.sources.reuters = { status: 'error', lastFetch: Date.now(), items: 0, error: err.message };
+    return [];
+  }
+}
+
+// Fetch latest from Al Jazeera
+async function refreshAlJazeera() {
+  sourceStatus.sources.aljazeera.status = 'fetching';
+  try {
+    const items = await fetchRSSHeadlines('https://www.aljazeera.com/xml/rss/all.xml', 'Al Jazeera', 10);
+    sourceStatus.sources.aljazeera = { status: 'ok', lastFetch: Date.now(), items: items.length, error: null };
+    return items;
+  } catch (err) {
+    sourceStatus.sources.aljazeera = { status: 'error', lastFetch: Date.now(), items: 0, error: err.message };
+    return [];
+  }
+}
+
+// Refresh Liveuamap (reuse existing endpoint logic)
+async function refreshLiveuamap() {
+  if (!LIVEUAMAP_API_KEY) {
+    sourceStatus.sources.liveuamap = { status: 'no_key', lastFetch: null, events: 0, error: 'No API key' };
+    return [];
+  }
+  sourceStatus.sources.liveuamap.status = 'fetching';
+  try {
+    const apiUrl = `https://a.liveuamap.com/api/mpts?key=${LIVEUAMAP_API_KEY}&region=middleeast&limit=30`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(apiUrl, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'BRE4CH-ROAR/1.0' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) throw new Error(`API ${response.status}`);
+    const data = await response.json();
+    const events = (data.events || data.mpts || data || []);
+    liveuamapCache = {
+      data: { events: events.map(evt => ({
+        id: evt.id || `lua-${evt.timeDt || Date.now()}`,
+        name: evt.name || evt.title || '',
+        lat: parseFloat(evt.lat || 0), lng: parseFloat(evt.lng || 0),
+        time: evt.timeDt || evt.time || '', source: evt.source || 'liveuamap',
+        url: evt.url || '', region: evt.region || 'middleeast',
+      })), source: 'liveuamap', region: 'middleeast', count: events.length, cached: false },
+      timestamp: Date.now(),
+    };
+    sourceStatus.sources.liveuamap = { status: 'ok', lastFetch: Date.now(), events: events.length, error: null };
+    return events;
+  } catch (err) {
+    sourceStatus.sources.liveuamap = { status: 'error', lastFetch: Date.now(), events: 0, error: err.message };
+    return [];
+  }
+}
+
+// Aggregated headlines cache
+let headlinesCache = { items: [], timestamp: 0 };
+
+// MASTER REFRESH — runs all sources in parallel
+async function refreshAllSources() {
+  if (sourceStatus.running) return sourceStatus;
+  sourceStatus.running = true;
+  console.log(`[REFRESH] ⟳ Refreshing all sources...`);
+
+  const startTime = Date.now();
+
+  const [liveuamap, centcom, reuters, aljazeera] = await Promise.allSettled([
+    refreshLiveuamap(),
+    refreshCentcom(),
+    refreshReuters(),
+    refreshAlJazeera(),
+  ]);
+
+  // Merge all headlines into cache
+  const allItems = [
+    ...(centcom.status === 'fulfilled' ? centcom.value : []),
+    ...(reuters.status === 'fulfilled' ? reuters.value : []),
+    ...(aljazeera.status === 'fulfilled' ? aljazeera.value : []),
+  ];
+  headlinesCache = { items: allItems, timestamp: Date.now() };
+
+  sourceStatus.lastRefresh = Date.now();
+  sourceStatus.nextRefresh = Date.now() + SOURCE_REFRESH_INTERVAL;
+  sourceStatus.refreshCount++;
+  sourceStatus.running = false;
+
+  const elapsed = Date.now() - startTime;
+  const okCount = Object.values(sourceStatus.sources).filter(s => s.status === 'ok').length;
+  console.log(`[REFRESH] ✓ Done in ${elapsed}ms — ${okCount}/${Object.keys(sourceStatus.sources).length} sources online — ${allItems.length} headlines cached`);
+
+  return sourceStatus;
+}
+
+// API: Get source status
+app.get('/api/sources/status', (_req, res) => {
+  res.json({
+    ...sourceStatus,
+    intervalMs: SOURCE_REFRESH_INTERVAL,
+    headlineCount: headlinesCache.items.length,
+  });
+});
+
+// API: Get cached headlines from all sources
+app.get('/api/sources/headlines', (req, res) => {
+  const source = req.query.source; // optional filter
+  let items = headlinesCache.items;
+  if (source) items = items.filter(i => i.source.toLowerCase().includes(source.toLowerCase()));
+  res.json({
+    items,
+    count: items.length,
+    lastRefresh: headlinesCache.timestamp,
+    cached: true,
+  });
+});
+
+// API: Force manual refresh
+app.post('/api/sources/refresh', async (_req, res) => {
+  try {
+    const status = await refreshAllSources();
+    res.json({ ok: true, ...status, headlineCount: headlinesCache.items.length });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Auto-refresh scheduler — every 5 minutes
+let refreshTimer = null;
+function startRefreshScheduler() {
+  // Initial refresh on boot (delayed 5s to let server start)
+  setTimeout(() => {
+    refreshAllSources();
+  }, 5000);
+
+  // Then every 5 minutes
+  refreshTimer = setInterval(() => {
+    refreshAllSources();
+  }, SOURCE_REFRESH_INTERVAL);
+
+  console.log(`[REFRESH] Macro active — all sources refresh every ${SOURCE_REFRESH_INTERVAL / 1000}s (5 min)`);
+}
+
 // Health check — also pings Ollama to verify model availability
 app.get('/api/health', async (_req, res) => {
   let ollamaOnline = false;
@@ -544,4 +759,5 @@ app.listen(PORT, () => {
   console.log(`[ULTRON] Backend API running on http://localhost:${PORT}`);
   console.log(`[ULTRON] Model: ${ULTRON_MODEL} via ${OLLAMA_URL}`);
   console.log(`[ULTRON] SOUL: ${ULTRON_SOUL ? 'loaded' : 'built-in fallback'}`);
+  startRefreshScheduler();
 });

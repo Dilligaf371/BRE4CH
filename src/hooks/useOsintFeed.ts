@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export type OsintSource = 'reuters' | 'aljazeera' | 'dod' | 'idf' | 'ap' | 'centcom' | 'flightradar';
 export type OsintPriority = 'flash' | 'immediate' | 'priority' | 'routine';
@@ -59,6 +59,16 @@ const OSINT_HEADLINES: { source: OsintSource; title: string; summary: string; pr
   { source: 'aljazeera', title: 'Cyprus: drone hits British air base — limited damage', summary: '[B2] Drone impact at UK sovereign base area — no UK casualties reported', priority: 'priority', region: 'Cyprus' },
 ];
 
+// Map RSS source names to OsintSource keys
+const SOURCE_MAP: Record<string, OsintSource> = {
+  'CENTCOM': 'centcom',
+  'Reuters': 'reuters',
+  'Al Jazeera': 'aljazeera',
+  'AP': 'ap',
+  'IDF': 'idf',
+  'DoD': 'dod',
+};
+
 function generateOsintItem(): OsintItem {
   const headline = OSINT_HEADLINES[Math.floor(Math.random() * OSINT_HEADLINES.length)];
   return {
@@ -72,6 +82,30 @@ function generateOsintItem(): OsintItem {
   };
 }
 
+// Convert a live RSS headline to OsintItem
+function liveHeadlineToOsint(h: { title: string; link: string; pubDate: string; source: string }): OsintItem {
+  const source = SOURCE_MAP[h.source] || 'reuters';
+  // Detect priority from keywords
+  let priority: OsintPriority = 'routine';
+  const lower = h.title.toLowerCase();
+  if (lower.includes('breaking') || lower.includes('killed') || lower.includes('strike') || lower.includes('attack') || lower.includes('war')) priority = 'flash';
+  else if (lower.includes('iran') || lower.includes('military') || lower.includes('missile') || lower.includes('nuclear')) priority = 'immediate';
+  else if (lower.includes('middle east') || lower.includes('gulf') || lower.includes('israel') || lower.includes('hezbollah')) priority = 'priority';
+
+  return {
+    id: `live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    source,
+    title: h.title,
+    summary: `[LIVE] ${h.source} — ${h.pubDate || 'just now'}`,
+    timestamp: h.pubDate ? new Date(h.pubDate).getTime() || Date.now() : Date.now(),
+    priority,
+    region: 'Middle East',
+    url: h.link,
+  };
+}
+
+const LIVE_API = 'http://localhost:3001/api/sources/headlines';
+
 export function useOsintFeed(maxItems = 30): OsintItem[] {
   const [items, setItems] = useState<OsintItem[]>(() => {
     const initial: OsintItem[] = [];
@@ -82,7 +116,37 @@ export function useOsintFeed(maxItems = 30): OsintItem[] {
     }
     return initial;
   });
+  const injectedRef = useRef<Set<string>>(new Set());
 
+  // Inject real headlines from backend RSS feeds
+  const injectLiveHeadlines = useCallback(async () => {
+    try {
+      const res = await fetch(LIVE_API);
+      if (!res.ok) return;
+      const data = await res.json();
+      const liveItems: { title: string; link: string; pubDate: string; source: string }[] = data.items || [];
+
+      if (liveItems.length === 0) return;
+
+      // Only inject headlines we haven't seen before
+      const newItems = liveItems.filter(h => !injectedRef.current.has(h.title));
+      if (newItems.length === 0) return;
+
+      const osintItems = newItems.map(liveHeadlineToOsint);
+      osintItems.forEach(i => injectedRef.current.add(i.title));
+
+      setItems(prev => [...osintItems, ...prev].slice(0, maxItems));
+    } catch { /* backend offline — continue with mock data */ }
+  }, [maxItems]);
+
+  // Poll for live headlines every 60s
+  useEffect(() => {
+    injectLiveHeadlines();
+    const interval = setInterval(injectLiveHeadlines, 60_000);
+    return () => clearInterval(interval);
+  }, [injectLiveHeadlines]);
+
+  // Continue generating mock OSINT items in between
   const addItem = useCallback(() => {
     setItems(prev => {
       const newItem = generateOsintItem();

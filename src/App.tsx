@@ -8,6 +8,8 @@ import { InfrastructureLegend } from './components/InfrastructureLegend';
 import { EventFeed } from './components/EventFeed';
 import { BottomTicker } from './components/BottomTicker';
 import { SocmintPanel } from './components/SocmintPanel';
+import { SocialAccountsPanel } from './components/SocialAccountsPanel';
+import { SheltersPanel } from './components/SheltersPanel';
 import { LoginPage } from './components/LoginPage';
 
 function App() {
@@ -49,7 +51,10 @@ function App() {
   return (
     <div className="h-screen flex flex-col bg-[var(--palantir-bg)] scanlines">
       {/* Header */}
-      <Header />
+      <Header onLogout={() => {
+        localStorage.removeItem('breach-auth');
+        setIsAuthenticated(false);
+      }} />
 
       {/* Main Content */}
       <main className="flex-1 flex min-h-0 p-2 gap-2">
@@ -57,6 +62,8 @@ function App() {
         <aside className="w-80 flex-shrink-0 overflow-y-auto scrollbar-hide min-h-0 space-y-2">
           <AttackStatsPanel />
           <SocmintPanel />
+          <SocialAccountsPanel />
+          <SheltersPanel />
         </aside>
 
         {/* Center - Map + Event Feed */}
@@ -109,6 +116,7 @@ function App() {
 
       {/* Bottom Ticker */}
       <BottomTicker />
+
     </div>
   );
 }

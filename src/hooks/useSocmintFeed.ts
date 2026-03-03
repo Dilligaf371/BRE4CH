@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export type SocmintPlatform = 'telegram' | 'snapchat' | 'x';
 export type SocmintSeverity = 'critical' | 'high' | 'medium' | 'low';
@@ -154,6 +154,33 @@ function generateSocmintItem(): SocmintItem {
   }
 }
 
+const LIVE_API = 'http://localhost:3001/api/sources/headlines';
+
+// Convert live headline to SOCMINT X post
+function liveHeadlineToSocmint(h: { title: string; source: string; pubDate: string }): SocmintItem {
+  const account = h.source === 'CENTCOM' ? '@CENTCOM'
+    : h.source === 'Al Jazeera' ? '@AJEnglish'
+    : h.source === 'Reuters' ? '@Reuters'
+    : X_ACCOUNTS[Math.floor(Math.random() * 6)]; // top 6 verified
+
+  const lower = h.title.toLowerCase();
+  let severity: SocmintSeverity = 'low';
+  if (lower.includes('kill') || lower.includes('strike') || lower.includes('attack') || lower.includes('war') || lower.includes('dead')) severity = 'critical';
+  else if (lower.includes('iran') || lower.includes('military') || lower.includes('missile') || lower.includes('bomb')) severity = 'high';
+  else if (lower.includes('middle east') || lower.includes('israel') || lower.includes('gaza') || lower.includes('hezbollah')) severity = 'medium';
+
+  return {
+    id: `live-socm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    platform: 'x',
+    source: account,
+    content: `${h.title} (${h.source})`,
+    timestamp: h.pubDate ? new Date(h.pubDate).getTime() || Date.now() : Date.now(),
+    severity,
+    language: 'EN',
+    flagged: severity === 'critical',
+  };
+}
+
 export function useSocmintFeed(maxItems = 40): SocmintItem[] {
   const [items, setItems] = useState<SocmintItem[]>(() => {
     const initial: SocmintItem[] = [];
@@ -164,7 +191,35 @@ export function useSocmintFeed(maxItems = 40): SocmintItem[] {
     }
     return initial;
   });
+  const injectedRef = useRef<Set<string>>(new Set());
 
+  // Inject live headlines as X posts every 60s
+  const injectLiveHeadlines = useCallback(async () => {
+    try {
+      const res = await fetch(LIVE_API);
+      if (!res.ok) return;
+      const data = await res.json();
+      const headlines: { title: string; source: string; pubDate: string }[] = data.items || [];
+      if (headlines.length === 0) return;
+
+      const newOnes = headlines.filter(h => !injectedRef.current.has(h.title));
+      if (newOnes.length === 0) return;
+
+      // Inject up to 5 at a time to not flood
+      const toInject = newOnes.slice(0, 5).map(liveHeadlineToSocmint);
+      toInject.forEach(i => injectedRef.current.add(i.content.split(' (')[0]));
+
+      setItems(prev => [...toInject, ...prev].slice(0, maxItems));
+    } catch { /* backend offline */ }
+  }, [maxItems]);
+
+  useEffect(() => {
+    injectLiveHeadlines();
+    const interval = setInterval(injectLiveHeadlines, 60_000);
+    return () => clearInterval(interval);
+  }, [injectLiveHeadlines]);
+
+  // Continue mock SOCMINT generation
   const addItem = useCallback(() => {
     setItems(prev => {
       const newItem = generateSocmintItem();

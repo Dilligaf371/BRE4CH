@@ -46,6 +46,8 @@ export interface AttackEvent {
   target: string;
   status: 'intercepted' | 'impact' | 'ongoing' | 'neutralized';
   details: string;
+  source?: string;
+  sourceUrl?: string;
 }
 
 export interface IntelReport {
@@ -364,6 +366,27 @@ export const TICKER_MESSAGES = [
 
 // --------------- HELPER FUNCTIONS ---------------
 
+// Source attribution for mock events — verified OSINT sources
+const EVENT_SOURCES: { name: string; url: string }[] = [
+  { name: 'CENTCOM', url: 'https://www.centcom.mil' },
+  { name: 'IDF', url: 'https://www.idf.il' },
+  { name: 'Reuters', url: 'https://www.reuters.com/world/middle-east/' },
+  { name: 'Al Jazeera', url: 'https://www.aljazeera.com/tag/iran/' },
+  { name: '@Conflicts', url: 'https://x.com/Conflicts' },
+  { name: '@IntelCrab', url: 'https://x.com/IntelCrab' },
+  { name: '@sentdefender', url: 'https://x.com/sentdefender' },
+  { name: 'CYBERCOM', url: 'https://www.cybercom.mil' },
+];
+
+// Map event category to likely sources
+const CATEGORY_SOURCES: Record<string, number[]> = {
+  intercept: [0, 1, 2],       // CENTCOM, IDF, Reuters
+  strike: [0, 1, 4],          // CENTCOM, IDF, @Conflicts
+  intel: [5, 6, 4],           // @IntelCrab, @sentdefender, @Conflicts
+  alert: [0, 3, 2],           // CENTCOM, Al Jazeera, Reuters
+  cyber: [7, 0, 5],           // CYBERCOM, CENTCOM, @IntelCrab
+};
+
 export function generateEvent(): AttackEvent {
   const types: AttackType[] = ['ballistic', 'drone', 'cyber', 'artillery', 'cruise', 'sabotage'];
   const statuses: AttackEvent['status'][] = ['intercepted', 'impact', 'ongoing', 'neutralized'];
@@ -381,6 +404,10 @@ export function generateEvent(): AttackEvent {
   let detail = templates[Math.floor(Math.random() * templates.length)];
   detail = detail.replace('{sector}', sector).replace('{target}', target).replace('{freq}', String(freq)).replace('{count}', String(count));
 
+  // Pick a source appropriate to the event category
+  const sourceIndices = CATEGORY_SOURCES[category] || [0, 2, 3];
+  const src = EVENT_SOURCES[sourceIndices[Math.floor(Math.random() * sourceIndices.length)]];
+
   return {
     id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     timestamp: Date.now(),
@@ -389,6 +416,8 @@ export function generateEvent(): AttackEvent {
     target,
     status,
     details: detail,
+    source: src.name,
+    sourceUrl: src.url,
   };
 }
 

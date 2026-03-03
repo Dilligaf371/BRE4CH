@@ -87,7 +87,7 @@ export function SocmintPanel() {
   const snapCount = items.filter(i => i.platform === 'snapchat').length;
 
   return (
-    <div className="flex flex-col h-full bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg overflow-hidden">
+    <div className="flex flex-col bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg overflow-hidden">
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-[var(--palantir-border)] flex items-center gap-2 flex-shrink-0">
         <button
@@ -169,7 +169,7 @@ export function SocmintPanel() {
           </div>
 
           {/* Feed */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5 min-h-0 scrollbar-hide">
+          <div className="max-h-[280px] overflow-y-auto p-2 space-y-1.5 scrollbar-hide">
             {filtered.map((item) => (
               <SocmintItemRow key={item.id} item={item} />
             ))}

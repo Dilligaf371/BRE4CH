@@ -4,6 +4,9 @@ import { infrastructure, epicFuryPositions, INFRA_COLORS, STATUS_COLORS } from '
 import { SHELTERS } from './SheltersPanel';
 import type { InfrastructurePoint, MilitaryPosition, InfraType, InfraStatus } from '../data/mockData';
 import { useEventFeed } from '../hooks/useEventFeed';
+import { AttackFlowToggle } from './AttackFlowToggle';
+import { useAttackFlowCanvas } from '../hooks/useAttackFlowCanvas';
+import { useAttackFlowState } from '../hooks/useAttackFlowState';
 
 const mapContainerStyle = { width: '100%', height: '100%' };
 const center = { lat: 32.4279, lng: 53.688 };
@@ -417,7 +420,7 @@ function InfraInfoContent({ inf, onLaunchOp, opStatuses }: {
 function ForceInfoContent({ pos }: { pos: MilitaryPosition }) {
   const [showIntel, setShowIntel] = useState(false);
   const isAllied = pos.type === 'allied';
-  const color = isAllied ? '#22c55e' : '#ef4444';
+  const color = isAllied ? '#06b6d4' : '#ef4444';
   const reports = FORCE_INTEL[pos.id] || [];
 
   return (
@@ -640,27 +643,6 @@ function POICreationMenu({ coords, onConfirm, onCancel }: {
 
 // --------------- MAIN MAP ---------------
 
-// Match event target names to infrastructure point names/ids
-function matchEventToInfra(target: string): string[] {
-  const lower = target.toLowerCase();
-  return infrastructure
-    .filter(inf => {
-      const name = inf.name.toLowerCase();
-      const nameEn = inf.nameEn.toLowerCase();
-      return lower.includes(name) || lower.includes(nameEn)
-        || name.includes(lower) || nameEn.includes(lower);
-    })
-    .map(inf => inf.id);
-}
-
-// Glow state: which infra points are glowing and when to stop
-interface GlowState {
-  infraId: string;
-  color: string;       // glow color based on event type
-  intensity: number;    // 0-1 pulsing
-  expiresAt: number;
-}
-
 export function MapView() {
   const [selectedInf, setSelectedInf] = useState<string | null>(null);
   const [selectedPos, setSelectedPos] = useState<string | null>(null);
@@ -668,83 +650,12 @@ export function MapView() {
   const [selectedCustom, setSelectedCustom] = useState<string | null>(null);
   const [newPOICoords, setNewPOICoords] = useState<[number, number] | null>(null);
   const [opStatuses, setOpStatuses] = useState<OpStatus[]>([]);
-  const [glowStates, setGlowStates] = useState<GlowState[]>([]);
   const [selectedShelter, setSelectedShelter] = useState<string | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { showConventional, showCyber, toggleConventional, toggleCyber } = useAttackFlowState();
+  useAttackFlowCanvas(mapRef, canvasRef, showConventional, showCyber);
   const events = useEventFeed(50);
-  const prevEventCountRef = useRef(0);
-
-  // Event glow colors by attack type
-  const EVENT_GLOW_COLORS: Record<string, string> = {
-    ballistic: '#ef4444',  // red
-    drone: '#06b6d4',      // cyan
-    cyber: '#a855f7',      // purple
-    artillery: '#eab308',  // yellow
-    cruise: '#f97316',     // orange
-    sabotage: '#ec4899',   // pink
-  };
-
-  // Watch for new events and trigger glow on matching infra points
-  useEffect(() => {
-    if (events.length <= prevEventCountRef.current) {
-      prevEventCountRef.current = events.length;
-      return;
-    }
-
-    // New events = difference from previous count
-    const newCount = events.length - prevEventCountRef.current;
-    const newEvents = events.slice(0, Math.min(newCount, 5)); // max 5 new at a time
-    prevEventCountRef.current = events.length;
-
-    const newGlows: GlowState[] = [];
-
-    for (const evt of newEvents) {
-      // Try to match by target name
-      let matchedIds = matchEventToInfra(evt.target);
-
-      // Also try matching by details text
-      if (matchedIds.length === 0) {
-        matchedIds = matchEventToInfra(evt.details);
-      }
-
-      // If no specific match, pick random infra points to glow (simulates general theater activity)
-      if (matchedIds.length === 0) {
-        const random = infrastructure[Math.floor(Math.random() * infrastructure.length)];
-        matchedIds = [random.id];
-      }
-
-      for (const id of matchedIds) {
-        newGlows.push({
-          infraId: id,
-          color: EVENT_GLOW_COLORS[evt.type] || '#ef4444',
-          intensity: 1,
-          expiresAt: Date.now() + 8000, // glow for 8 seconds
-        });
-      }
-    }
-
-    if (newGlows.length > 0) {
-      setGlowStates(prev => [...newGlows, ...prev].slice(0, 30));
-    }
-  }, [events]);
-
-  // Animate glow pulse and clean up expired glows
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setGlowStates(prev => {
-        const now = Date.now();
-        return prev
-          .filter(g => now < g.expiresAt)
-          .map(g => {
-            const remaining = (g.expiresAt - now) / 8000;
-            // Pulsing: sin wave that fades out
-            const pulse = Math.sin(now / 300) * 0.3 + 0.7;
-            return { ...g, intensity: remaining * pulse };
-          });
-      });
-    }, 150); // update ~6.7 times/sec for smooth animation
-    return () => clearInterval(interval);
-  }, []);
 
   // Listen for shelter navigation events from Header dropdown
   useEffect(() => {
@@ -878,23 +789,6 @@ export function MapView() {
         onRightClick={handleRightClick}
         onClick={handleMapClick}
       >
-        {/* Infrastructure threat zones (outer glow) */}
-        {infrastructure.filter(i => i.priority === 1).map((inf) => (
-          <Circle
-            key={`zone-${inf.id}`}
-            center={{ lat: inf.coords[0], lng: inf.coords[1] }}
-            radius={45000}
-            options={{
-              fillColor: STATUS_COLORS[inf.status],
-              fillOpacity: 0.05,
-              strokeColor: STATUS_COLORS[inf.status],
-              strokeWeight: 0.5,
-              strokeOpacity: 0.3,
-              clickable: false,
-            }}
-          />
-        ))}
-
         {/* Infrastructure markers */}
         {infrastructure.map((inf) => (
           <Circle
@@ -918,28 +812,6 @@ export function MapView() {
             }}
           />
         ))}
-
-        {/* Event glow rings — pulse when strikes/events happen */}
-        {glowStates.map((glow, idx) => {
-          const inf = infrastructure.find(i => i.id === glow.infraId);
-          if (!inf) return null;
-          return (
-            <Circle
-              key={`glow-${idx}-${glow.infraId}`}
-              center={{ lat: inf.coords[0], lng: inf.coords[1] }}
-              radius={35000 + glow.intensity * 20000}
-              options={{
-                fillColor: glow.color,
-                fillOpacity: glow.intensity * 0.25,
-                strokeColor: glow.color,
-                strokeWeight: 2 + glow.intensity * 2,
-                strokeOpacity: glow.intensity * 0.8,
-                clickable: false,
-                zIndex: 5,
-              }}
-            />
-          );
-        })}
 
         {/* Custom POI markers */}
         {customPOIs.map((poi) => (
@@ -987,7 +859,7 @@ export function MapView() {
         {/* Military positions */}
         {epicFuryPositions.map((pos) => {
           const isAllied = pos.type === 'allied';
-          const color = isAllied ? '#22c55e' : '#ef4444';
+          const color = isAllied ? '#06b6d4' : '#ef4444';
           return (
             <Circle
               key={pos.id}
@@ -1033,24 +905,6 @@ export function MapView() {
               setSelectedCustom(null);
               setNewPOICoords(null);
               setSelectedShelter(selectedShelter === shelter.id ? null : shelter.id);
-            }}
-          />
-        ))}
-
-        {/* Shelter outer glow ring */}
-        {SHELTERS.filter(s => s.status === 'OPEN').map((shelter) => (
-          <Circle
-            key={`shelter-glow-${shelter.id}`}
-            center={{ lat: shelter.lat, lng: shelter.lng }}
-            radius={1000}
-            options={{
-              fillColor: '#22c55e',
-              fillOpacity: 0.08,
-              strokeColor: '#22c55e',
-              strokeWeight: 1,
-              strokeOpacity: 0.3,
-              clickable: false,
-              zIndex: 24,
             }}
           />
         ))}
@@ -1181,6 +1035,19 @@ export function MapView() {
             </InfoWindow>
           ))}
       </GoogleMap>
+
+      {/* Norse-style attack flow canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-[500]"
+        style={{ mixBlendMode: 'screen' }}
+      />
+      <AttackFlowToggle
+        showConventional={showConventional}
+        showCyber={showCyber}
+        onToggleConventional={toggleConventional}
+        onToggleCyber={toggleCyber}
+      />
 
       {/* Map overlay info */}
       <div className="absolute bottom-3 left-3 px-3 py-2 rounded-lg bg-black/70 border border-[var(--palantir-border)] backdrop-blur-sm">

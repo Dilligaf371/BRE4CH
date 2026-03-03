@@ -79,7 +79,7 @@ function loadUltronMessages(): Message[] {
     {
       id: '0',
       role: 'assistant',
-      content: "ULTRON OFSEC online. Operational intelligence system connected to BRE4CH.\n\nOperation Roar of the Lion - Phase III STRIKE active.\n\nConnected to AI Gateway. Ask your questions.",
+      content: "ULTRON OFSEC online. Operational intelligence system connected to BRE4CH.\n\nOperation Roaring Lion - Phase III STRIKE active.\n\nConnected to AI Gateway. Ask your questions.",
       timestamp: new Date(),
       type: 'text',
     },

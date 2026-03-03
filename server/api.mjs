@@ -528,7 +528,7 @@ const sourceStatus = {
     liveuamap: { status: 'idle', lastFetch: null, events: 0, error: null },
     osint_twitter: { status: 'idle', lastFetch: null, items: 0, error: null },
     centcom: { status: 'idle', lastFetch: null, items: 0, error: null },
-    reuters: { status: 'idle', lastFetch: null, items: 0, error: null },
+    bbc: { status: 'idle', lastFetch: null, items: 0, error: null },
     aljazeera: { status: 'idle', lastFetch: null, items: 0, error: null },
   },
   running: false,
@@ -580,15 +580,15 @@ async function refreshCentcom() {
   }
 }
 
-// Fetch latest from Reuters World
-async function refreshReuters() {
-  sourceStatus.sources.reuters.status = 'fetching';
+// Fetch latest from BBC Middle East
+async function refreshBBC() {
+  sourceStatus.sources.bbc.status = 'fetching';
   try {
-    const items = await fetchRSSHeadlines('https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best', 'Reuters', 10);
-    sourceStatus.sources.reuters = { status: 'ok', lastFetch: Date.now(), items: items.length, error: null };
+    const items = await fetchRSSHeadlines('https://feeds.bbci.co.uk/news/world/middle_east/rss.xml', 'BBC', 10);
+    sourceStatus.sources.bbc = { status: 'ok', lastFetch: Date.now(), items: items.length, error: null };
     return items;
   } catch (err) {
-    sourceStatus.sources.reuters = { status: 'error', lastFetch: Date.now(), items: 0, error: err.message };
+    sourceStatus.sources.bbc = { status: 'error', lastFetch: Date.now(), items: 0, error: err.message };
     return [];
   }
 }
@@ -655,17 +655,17 @@ async function refreshAllSources() {
 
   const startTime = Date.now();
 
-  const [liveuamap, centcom, reuters, aljazeera] = await Promise.allSettled([
+  const [liveuamap, centcom, bbc, aljazeera] = await Promise.allSettled([
     refreshLiveuamap(),
     refreshCentcom(),
-    refreshReuters(),
+    refreshBBC(),
     refreshAlJazeera(),
   ]);
 
   // Merge all headlines into cache
   const allItems = [
     ...(centcom.status === 'fulfilled' ? centcom.value : []),
-    ...(reuters.status === 'fulfilled' ? reuters.value : []),
+    ...(bbc.status === 'fulfilled' ? bbc.value : []),
     ...(aljazeera.status === 'fulfilled' ? aljazeera.value : []),
   ];
   headlinesCache = { items: allItems, timestamp: Date.now() };

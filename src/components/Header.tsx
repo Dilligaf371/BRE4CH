@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Radio, AlertTriangle, Zap, Lock, RefreshCw, ChevronDown, Menu, LogOut, Shield, MapPin, Users, Navigation } from 'lucide-react';
 import { useMissionClock } from '../hooks/useMissionClock';
 import { useSourceRefresh } from '../hooks/useSourceRefresh';
 import { useEmergencyAlerts } from '../hooks/useEmergencyAlerts';
 import { THREAT_LEVEL, type MissionPhase } from '../data/mockData';
 import { AlertDropdown } from './EmergencyAlert';
-import { SHELTERS } from './SheltersPanel';
+import { SHELTERS, EMIRATE_LIST, EMIRATE_SHORT, type Emirate } from './SheltersPanel';
 
 const THREAT_COLORS: Record<string, string> = {
   CRITICAL: 'text-red-500 bg-red-500/20 border-red-500/50',
@@ -125,7 +125,19 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [showShelterPanel]);
 
-  const openShelters = SHELTERS.filter(s => s.status === 'OPEN');
+  const [selectedEmirate, setSelectedEmirate] = useState<Emirate | 'ALL'>(() => {
+    try { return (localStorage.getItem('roar-shelters-emirate') as Emirate | 'ALL') || 'ALL'; } catch { return 'ALL'; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('roar-shelters-emirate', selectedEmirate);
+  }, [selectedEmirate]);
+
+  const filteredShelters = useMemo(
+    () => selectedEmirate === 'ALL' ? SHELTERS : SHELTERS.filter(s => s.emirate === selectedEmirate),
+    [selectedEmirate],
+  );
+  const openShelters = filteredShelters.filter(s => s.status === 'OPEN');
   const totalCapacity = openShelters.reduce((sum, s) => sum + s.capacity, 0);
 
   const phaseConfig = PHASE_CONFIG[phase];
@@ -139,7 +151,7 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
         </div>
         <div className="-ml-2">
           <h1 className="font-bold text-base tracking-tight text-[var(--palantir-text)] leading-tight">
-            ROAR OF THE LION
+            ROARING LION
           </h1>
           <p className="text-[10px] font-mono text-[var(--palantir-text-muted)] tracking-wider">
             OPERATION EPIC FURY // IRAN THEATRE // CENTCOM
@@ -295,17 +307,18 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
           >
             <Shield className="w-3.5 h-3.5" />
             <span className="text-[10px] font-mono tracking-wider">SHELTERS</span>
-            <span className="text-[9px] font-mono text-green-400/80">{openShelters.length}</span>
+            <span className="text-[9px] font-mono text-green-400/80">{SHELTERS.length}</span>
             <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${showShelterPanel ? 'rotate-180' : ''}`} />
           </button>
 
           {showShelterPanel && (
             <div className="absolute top-full mt-1 right-0 w-[420px] bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg shadow-2xl shadow-black/60 overflow-hidden z-[100] animate-alertFadeIn">
+              {/* Title + stats */}
               <div className="px-3 py-2 border-b border-[var(--palantir-border)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Shield className="w-3.5 h-3.5 text-green-400" />
                   <span className="text-[9px] font-mono font-bold text-[var(--palantir-text-muted)] tracking-[0.2em]">
-                    UAE EMERGENCY SHELTERS — ABU DHABI
+                    UAE EMERGENCY SHELTERS{selectedEmirate !== 'ALL' ? ` — ${selectedEmirate.toUpperCase()}` : ''}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -317,8 +330,40 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
                   </span>
                 </div>
               </div>
+
+              {/* Emirate filter */}
+              <div className="px-2 py-1.5 border-b border-[var(--palantir-border)]/50 flex items-center gap-1 flex-wrap">
+                <button
+                  onClick={() => setSelectedEmirate('ALL')}
+                  className={`text-[8px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                    selectedEmirate === 'ALL'
+                      ? 'bg-green-500/30 text-green-400 border border-green-500/50'
+                      : 'text-[var(--palantir-text-muted)] hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  ALL <span className="opacity-60">{SHELTERS.length}</span>
+                </button>
+                {EMIRATE_LIST.map(e => {
+                  const count = SHELTERS.filter(s => s.emirate === e).length;
+                  return (
+                    <button
+                      key={e}
+                      onClick={() => setSelectedEmirate(e)}
+                      className={`text-[8px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                        selectedEmirate === e
+                          ? 'bg-green-500/30 text-green-400 border border-green-500/50'
+                          : 'text-[var(--palantir-text-muted)] hover:bg-white/5 border border-transparent'
+                      }`}
+                    >
+                      {EMIRATE_SHORT[e]} <span className="opacity-60">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Shelter list */}
               <div className="max-h-[360px] overflow-y-auto p-1.5 space-y-1 scrollbar-hide">
-                {SHELTERS.map(shelter => {
+                {filteredShelters.map(shelter => {
                   const statusColor = shelter.status === 'OPEN' ? 'text-green-400' : shelter.status === 'STANDBY' ? 'text-amber-400' : 'text-red-400';
                   const statusBg = shelter.status === 'OPEN' ? 'bg-green-500/20' : shelter.status === 'STANDBY' ? 'bg-amber-500/20' : 'bg-red-500/20';
                   return (
@@ -351,6 +396,11 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 pl-5.5">
                         <span className="text-[8px] font-mono text-[var(--palantir-text-muted)]">{shelter.district}</span>
+                        {selectedEmirate === 'ALL' && (
+                          <span className="text-[7px] font-mono text-green-400/70 bg-green-500/10 px-1 py-0.5 rounded">
+                            {EMIRATE_SHORT[shelter.emirate]}
+                          </span>
+                        )}
                         <span className="text-[7px] font-mono text-[var(--palantir-text-muted)] bg-white/5 px-1 py-0.5 rounded">
                           {shelter.type} — B{shelter.levels}
                         </span>
@@ -361,7 +411,7 @@ export function Header({ onLogout }: { onLogout?: () => void }) {
               </div>
               <div className="px-3 py-1.5 border-t border-[var(--palantir-border)]">
                 <p className="text-[7px] font-mono text-[var(--palantir-text-muted)] tracking-wider">
-                  SRC: NCEMA EMERGENCY GUIDE // ABU DHABI CIVIL DEFENCE AUTHORITY // CLICK TO NAVIGATE ON MAP
+                  SRC: NCEMA EMERGENCY GUIDE // UAE CIVIL DEFENCE AUTHORITIES // CLICK TO NAVIGATE ON MAP
                 </p>
               </div>
             </div>

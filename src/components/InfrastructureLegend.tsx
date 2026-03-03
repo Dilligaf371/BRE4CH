@@ -38,7 +38,7 @@ export function InfrastructureLegend() {
   ];
 
   const forces = [
-    { label: 'Epic Fury', color: '#22c55e' },
+    { label: 'Epic Fury', color: '#06b6d4' },
     { label: 'Hostile', color: '#ef4444' },
   ];
 

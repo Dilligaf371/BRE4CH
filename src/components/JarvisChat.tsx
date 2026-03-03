@@ -24,7 +24,7 @@ function loadMessages(): Message[] {
     {
       id: '0',
       role: 'assistant',
-      content: "C2 OFSEC online. Module INTEL COS connecté à BRE4CH.\n\nOperation Roar of the Lion — Phase III STRIKE active.\n\nConnected to AI Gateway. Ask your questions.",
+      content: "C2 OFSEC online. Module INTEL COS connecté à BRE4CH.\n\nOperation Roaring Lion — Phase III STRIKE active.\n\nConnected to AI Gateway. Ask your questions.",
       timestamp: new Date(),
       type: 'text',
     },

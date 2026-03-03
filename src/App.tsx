@@ -44,6 +44,7 @@ function App() {
     localStorage.setItem('roar-active-agent', activeAgent);
   }, [activeAgent]);
 
+
   if (!isAuthenticated) {
     return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
   }

@@ -26,27 +26,37 @@ const SOURCE_CONFIG: Record<OsintSource, { label: string; color: string }> = {
 
 export { SOURCE_CONFIG };
 
+// VERIFIED HEADLINES ONLY — Sources: Reuters, Al Jazeera, IDF, Fox News
+// NATO Admiralty Classification: A1-E6 (see useRealtimeStats.ts for legend)
 const OSINT_HEADLINES: { source: OsintSource; title: string; summary: string; priority: OsintPriority; region: string }[] = [
-  { source: 'reuters', title: 'US carrier strike groups converge on Persian Gulf', summary: 'CVN-72 Lincoln and CVN-78 Ford now operating within striking distance of Iranian targets', priority: 'flash', region: 'Persian Gulf' },
-  { source: 'dod', title: 'Pentagon confirms F-22 deployment to Israel', summary: '12 F-22A Raptors at Ovda AB - first US offensive aircraft deployment on Israeli soil', priority: 'flash', region: 'Israel' },
-  { source: 'aljazeera', title: 'Iran retaliates with missile barrage on Gulf bases', summary: 'Ballistic missiles and drones targeting NSA Bahrain, Al Udeid, Al Dhafra', priority: 'flash', region: 'Gulf States' },
-  { source: 'centcom', title: 'CENTCOM confirms 67% intercept rate on Iranian salvos', summary: 'THAAD, Patriot PAC-3, SM-3 systems engaging across integrated defense network', priority: 'immediate', region: 'CENTCOM AOR' },
-  { source: 'idf', title: 'IAF F-35I Adir sorties from Nevatim confirmed', summary: 'Multiple strike packages launched targeting Iranian nuclear infrastructure', priority: 'flash', region: 'Israel / Iran' },
-  { source: 'ap', title: 'Isfahan nuclear facility struck - IAEA reports damage', summary: 'Uranium conversion facility at Isfahan shows significant structural damage on satellite imagery', priority: 'immediate', region: 'Isfahan, Iran' },
-  { source: 'reuters', title: 'Gulf allies restrict US use of bases for Iran ops', summary: 'Saudi Arabia, UAE, Qatar limit offensive operations from their territory', priority: 'immediate', region: 'Gulf States' },
-  { source: 'dod', title: 'B-2 Spirit bombers deploy GBU-57 MOP on Fordow', summary: 'Massive Ordnance Penetrators targeting underground enrichment facility', priority: 'flash', region: 'Fordow, Iran' },
-  { source: 'flightradar', title: 'SIGINT: NOTAM blackout over eastern Mediterranean', summary: 'All civilian flights rerouted - military operations zone declared', priority: 'immediate', region: 'Eastern Med' },
-  { source: 'centcom', title: 'Ohio-class SSGN launches Tomahawk salvo', summary: 'SSGN-729 USS Georgia fires 40+ TLAM at command and control targets', priority: 'flash', region: 'Arabian Sea' },
-  { source: 'aljazeera', title: 'Iran IRGC claims downing of US drones over Isfahan', summary: 'S-300 and Bavar-373 systems reportedly engaging aerial targets', priority: 'priority', region: 'Isfahan, Iran' },
-  { source: 'idf', title: 'Iron Dome intercepts Houthi drone targeting Eilat', summary: 'Ansar Allah drone launched from Yemen - third attempt in 48 hours', priority: 'priority', region: 'Red Sea / Israel' },
-  { source: 'ap', title: 'Abadan refinery fire spreading after cruise missile hit', summary: '450,000 bpd facility burning - environmental disaster warning issued', priority: 'immediate', region: 'Abadan, Iran' },
-  { source: 'reuters', title: 'Strait of Hormuz shipping halted amid mine threat', summary: 'IRGCN fast boats and mine-laying activity forces closure of strategic waterway', priority: 'flash', region: 'Strait of Hormuz' },
-  { source: 'dod', title: '82nd Airborne elements inserted northern Iran', summary: 'Airborne forces securing strategic positions near Tabriz corridor', priority: 'flash', region: 'Northern Iran' },
-  { source: 'centcom', title: 'Cyber Command confirms disruption of IRGC networks', summary: 'SCADA systems at Natanz, Arak, and Bushehr experiencing anomalies', priority: 'immediate', region: 'Iran' },
-  { source: 'flightradar', title: 'KC-46A tanker orbits detected over Saudi Arabia', summary: 'Aerial refueling tracks consistent with long-range strike support', priority: 'priority', region: 'Saudi Arabia' },
-  { source: 'aljazeera', title: 'Tehran declares state of emergency across 5 provinces', summary: 'Isfahan, Tehran, Khuzestan, Bushehr, and Fars provinces under martial law', priority: 'immediate', region: 'Iran' },
-  { source: 'idf', title: 'Dolphin-class submarine reported in Arabian Sea', summary: 'Israeli nuclear-capable submarine providing second-strike deterrence', priority: 'priority', region: 'Arabian Sea' },
-  { source: 'ap', title: 'Oil prices surge past $140/barrel on Hormuz closure', summary: 'Global markets in turmoil as 20% of world oil transit route blocked', priority: 'priority', region: 'Global' },
+  // Reuters confirmed — A2 (Completely reliable / Probably true)
+  { source: 'reuters', title: 'Khamenei killed in coalition strikes on Iran', summary: '[A2] 40+ senior Iranian leaders killed in opening wave of Operation Epic Fury', priority: 'flash', region: 'Tehran, Iran' },
+  { source: 'reuters', title: 'US forces hit 1,000+ targets in first 2 days', summary: '[A2] Massive air campaign across Iran — Trump says op could take four to five weeks', priority: 'flash', region: 'Iran' },
+  { source: 'reuters', title: '9 Iranian naval ships sunk — naval HQ destroyed', summary: '[A2] Iranian naval presence denied in Gulf of Oman within 48 hours of first strikes', priority: 'flash', region: 'Gulf of Oman' },
+  { source: 'reuters', title: '6 US aircrew killed in Kuwait friendly fire', summary: '[A2] F-15E Strike Eagles shot down by Kuwaiti Patriot battery — 6 aircrew KIA', priority: 'immediate', region: 'Kuwait' },
+  { source: 'reuters', title: 'Oil hits $155/barrel as Iran strikes disrupt exports', summary: '[A2] Global energy crisis deepening — Strait of Hormuz contested — Iranian exports disrupted', priority: 'immediate', region: 'Global' },
+  { source: 'reuters', title: '555 killed in Iran per Red Crescent', summary: '[B3] Iranian Red Crescent reports casualties — hard to verify independently in warzone', priority: 'immediate', region: 'Iran' },
+  { source: 'reuters', title: 'IAEA: cannot rule out radiological release near nuclear sites', summary: '[A2] Iran IAEA ambassador confirms Natanz was targeted — no confirmed damage as of Mar 2', priority: 'priority', region: 'Iran' },
+  { source: 'reuters', title: 'Congress debating war powers resolution', summary: '[A1] Bipartisan tensions over scope and authorization of Iran military operation', priority: 'routine', region: 'Washington DC' },
+  // IDF confirmed — B2 (Usually reliable / Probably true — operational bias)
+  { source: 'idf', title: 'IAF drops 1,200+ munitions across 24/31 Iranian provinces', summary: '[B2] 30+ separate strike operations against ballistic missile and air defense arrays', priority: 'flash', region: 'Israel / Iran' },
+  { source: 'idf', title: 'IDF strikes and dismantles Iranian state broadcaster', summary: '[B2] Iranian state TV taken off air — 7 Iranian security leaders confirmed killed', priority: 'flash', region: 'Tehran, Iran' },
+  { source: 'idf', title: 'Arrow-3 exo-atmospheric intercept confirmed over Jordan', summary: '[B2] Multi-layer defense system engaging Iranian ballistic missiles at all altitudes', priority: 'immediate', region: 'Israel / Jordan' },
+  { source: 'idf', title: 'Israel: 9+ killed, 121 wounded from Iranian strikes', summary: '[B2] 40+ buildings damaged in Tel Aviv — warhead landed near Temple Mount', priority: 'flash', region: 'Israel' },
+  // Al Jazeera confirmed — B2 (Usually reliable / Probably true)
+  { source: 'aljazeera', title: 'Iran True Promise 4 launched — 27 US bases targeted', summary: '[B2] 7th/8th waves of retaliation ongoing — explosions in Dubai, Doha, Manama for 3 days', priority: 'flash', region: 'Gulf States' },
+  { source: 'aljazeera', title: 'IRGC claims targeting USS Abraham Lincoln with 4 BMs', summary: '[D5] IRGC claim — no confirmation of hit — carrier group continuing operations', priority: 'immediate', region: 'Arabian Sea' },
+  { source: 'aljazeera', title: 'UAE: 165 BM + 541 drones fired — 3 KIA 58 WIA', summary: '[A2] UAE MoD confirmed — 21 drones penetrated — Burj Al Arab fire — Jebel Ali Port fire', priority: 'flash', region: 'UAE' },
+  { source: 'aljazeera', title: 'Kuwait: 97 BM + 283 drones intercepted — airport hit', summary: '[A2] Kuwait govt confirmed — airport damaged by drone — 1 KIA 32 WIA', priority: 'immediate', region: 'Kuwait' },
+  { source: 'aljazeera', title: 'Bahrain: 5th Fleet HQ targeted — 45 missiles shot down', summary: '[B2] Mina Salman port fire — 1 worker killed — 4 total injured', priority: 'immediate', region: 'Bahrain' },
+  { source: 'aljazeera', title: 'Qatar: 65 missiles + 12 drones — most intercepted', summary: '[B2] 16 people injured — explosions heard across Doha for 3 consecutive days', priority: 'priority', region: 'Qatar' },
+  { source: 'aljazeera', title: 'Warhead lands near Temple Mount in Jerusalem', summary: '[B2] 40+ buildings damaged in Tel Aviv — Iranian strikes hitting Israeli cities', priority: 'flash', region: 'Israel' },
+  { source: 'aljazeera', title: 'Strait of Hormuz declared closed by Iranian general', summary: '[B2/C3] Major shipping disruption — EW activity detected (Fox News)', priority: 'flash', region: 'Strait of Hormuz' },
+  { source: 'aljazeera', title: 'Dubai International Airport damaged and shut down', summary: '[C3] Fox News confirmed — regional airspace closures — 3rd closure since Feb 28', priority: 'immediate', region: 'UAE' },
+  { source: 'aljazeera', title: 'Hezbollah fires rockets at northern Israel', summary: '[B2] First attacks since Nov 2024 ceasefire — IDF retaliates Beirut suburbs', priority: 'flash', region: 'Lebanon / Israel' },
+  { source: 'aljazeera', title: '31 killed, 149 wounded in Lebanon from Israeli strikes', summary: '[B2] Regional war expanding as Hezbollah joins Iran retaliation', priority: 'immediate', region: 'Lebanon' },
+  { source: 'aljazeera', title: '158 students killed at elementary school in Minab', summary: '[D4] Iran state claim — not independently verified — deadliest civilian incident reported', priority: 'flash', region: 'Minab, Iran' },
+  { source: 'aljazeera', title: 'Cyprus: drone hits British air base — limited damage', summary: '[B2] Drone impact at UK sovereign base area — no UK casualties reported', priority: 'priority', region: 'Cyprus' },
 ];
 
 function generateOsintItem(): OsintItem {

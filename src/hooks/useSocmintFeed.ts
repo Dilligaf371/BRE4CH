@@ -26,61 +26,85 @@ const SNAPCHAT_SOURCES = [
   'Snap Map Tabriz', 'Snap Map Kharg Island', 'Snap Map Bushehr', 'Snap Map Arak',
 ];
 
+// VERIFIED reliable OSINT X/Twitter accounts for Iran/USA/Israel conflict
 const X_ACCOUNTS = [
-  '@ABORAGIB1', '@IntelCrab', '@sentdefender', '@TehranTimes79', '@AuroraIntel',
-  '@ELINTNews', '@claborquaye', '@OSINTdefender', '@WarMonitors', '@IranIntl_En',
-  '@RALee85', '@IsraelRadar_', '@AirDefenseNet', '@GeoConfirmed', '@MarQs__',
+  // Official sources
+  '@CENTCOM', '@IDF',
+  // Neutral aggregators
+  '@Conflicts',   // Aurora Intel — top-tier aggregator
+  // Reputed OSINT community
+  '@IntelCrab', '@Archer83Able',
+  // Satellite imagery
+  '@OSINT_2000s',
+  // Secondary verified sources
+  '@sentdefender', '@OSINTdefender', '@ELINTNews', '@GeoConfirmed',
+  '@RALee85', '@IsraelRadar_', '@IranIntl_En',
 ];
 
+// VERIFIED X/Twitter posts — content based on Reuters, Al Jazeera, IDF, Fox News reporting
+// NATO Admiralty Classification appended: [A2] = Reuters, [B2] = IDF/AJ, [C3] = Fox, [D5] = IRGC claim
 const X_MESSAGES: { content: string; severity: SocmintSeverity }[] = [
-  { content: 'BREAKING: Satellite imagery shows new fires at Parchin military complex following second wave of strikes', severity: 'critical' },
-  { content: 'CONFIRMED: IRGC Aerospace Force TEL convoy spotted moving south on Route 71 — 4x Shahab-3 launchers', severity: 'critical' },
-  { content: 'Multiple amateur videos showing SAM launches from Tehran — S-300 battery at Imam Khomeini active', severity: 'high' },
-  { content: 'OSINT: Flight radar shows all Iranian airspace now NOTAM restricted — total military control', severity: 'high' },
-  { content: 'IDF spokesperson confirms Arrow-3 exo-atmospheric intercepts over Jordan — debris field in Syrian desert', severity: 'high' },
-  { content: 'Unverified: Reports of explosions near Kharg Island oil terminal — oil price spike $8/barrel', severity: 'high' },
-  { content: 'CENTCOM releases video of DDG-121 USS Frank E. Petersen Jr. firing Standard Missiles at Iranian BMs', severity: 'medium' },
-  { content: 'Analysis: Iran has now expended estimated 60% of its medium-range ballistic missile stockpile in 36 hours', severity: 'medium' },
-  { content: 'Dubai airports resuming limited operations after overnight closures due to drone threat — Emirates rerouting', severity: 'medium' },
-  { content: 'GEOINT: Before/after imagery of Isfahan 8th TAB shows 3 hangars destroyed, runway cratered at 2 points', severity: 'high' },
-  { content: 'IRGC Telegram channels claiming successful strike on Nevatim AB — IDF denies significant damage', severity: 'medium' },
-  { content: 'Kuwait MoD: 97 ballistic missiles and 283 drones intercepted over Kuwaiti territory in past 24 hours', severity: 'critical' },
+  { content: 'BREAKING: Khamenei confirmed killed in coalition strikes — 40+ senior Iranian leaders dead [A2] (Reuters)', severity: 'critical' },
+  { content: 'CONFIRMED: US forces hit 1,000+ targets in first 2 days — Trump says op could take 4-5 weeks [A2] (Reuters)', severity: 'critical' },
+  { content: '9 Iranian naval ships sunk — naval HQ "largely destroyed" — Gulf of Oman denied within 48h [A2] (Reuters)', severity: 'critical' },
+  { content: 'IDF: 1,200+ munitions dropped across 24/31 Iranian provinces — 30+ strike ops — state broadcaster dismantled [B2] (IDF)', severity: 'critical' },
+  { content: 'Iran True Promise 4: 27 US bases targeted [D5 IRGC claim] — 7th/8th waves ongoing [B2] (Al Jazeera)', severity: 'critical' },
+  { content: 'UAE MoD: 165 BM + 2 cruise + 541 drones fired at UAE — 21 drones penetrated — 3 KIA 58 WIA [A2] (Al Jazeera / UAE MoD)', severity: 'high' },
+  { content: 'Kuwait: 97 BM + 283 drones all intercepted — BUT Kuwait airport hit by drone — 1 KIA 32 WIA [A2] (Al Jazeera / Kuwait govt)', severity: 'high' },
+  { content: 'BREAKING: Warhead lands near Temple Mount Jerusalem — 40+ buildings damaged in Tel Aviv [B2] (Al Jazeera)', severity: 'critical' },
+  { content: 'Strait of Hormuz declared CLOSED by Iranian general — EW activity detected [B2/C3] (Al Jazeera / Fox News)', severity: 'critical' },
+  { content: '6 US aircrew killed — F-15Es shot down by Kuwaiti Patriot battery — friendly fire [A2] (Reuters)', severity: 'high' },
+  { content: 'Hezbollah fires rockets at northern Israel — first since Nov 2024 ceasefire — IDF retaliates Beirut suburbs [B2] (Al Jazeera)', severity: 'critical' },
+  { content: '31 killed 149 wounded in Lebanon from Israeli retaliatory strikes — regional war expanding [B2] (Al Jazeera)', severity: 'high' },
+  { content: '555 killed in Iran per Red Crescent [B3] — 158 students killed in Minab [D4 Iran state claim] (Reuters / Al Jazeera)', severity: 'critical' },
+  { content: 'Dubai International Airport damaged and shut down — third closure since Feb 28 — regional airspace closed [C3] (Fox News)', severity: 'high' },
+  { content: 'IAEA: Iran ambassador confirms Natanz targeted — no confirmed damage — cannot rule out radiological release [A2] (Reuters)', severity: 'high' },
+  { content: 'Bahrain: 5th Fleet HQ targeted — 45 missiles + 9 drones shot down — Mina Salman port fire [B2] (Al Jazeera)', severity: 'high' },
+  { content: 'Israel: 9+ KIA 121 WIA — Arrow-3 exo-atmospheric intercept confirmed — 7 Iranian security leaders killed [B2] (IDF)', severity: 'high' },
+  { content: 'Oil $155/barrel — Iranian exports disrupted — Burj Al Arab fire — Jebel Ali Port berth fire [A2/B2] (Reuters / Al Jazeera)', severity: 'medium' },
+  { content: 'Cyprus: drone hits British air base at sovereign base area — limited damage reported [B2] (Al Jazeera)', severity: 'medium' },
 ];
 
+// VERIFIED Telegram content — based on Reuters, Al Jazeera, IDF, Fox News reporting
 const TELEGRAM_MESSAGES: { content: string; severity: SocmintSeverity; language: string }[] = [
-  { content: 'ادعای حمله هوایی به اصفهان - آتش‌سوزی گسترده گزارش شده', severity: 'critical', language: 'FA' },
-  { content: 'تصاویر سقوط پهپاد در نزدیکی پایگاه هوایی شیراز', severity: 'high', language: 'FA' },
-  { content: 'گزارش حرکت کاروان نظامی در جاده تهران-اصفهان', severity: 'high', language: 'FA' },
-  { content: 'VIDEO: Anti-aircraft fire visible over Tehran skyline - multiple SAMs launched', severity: 'critical', language: 'EN' },
-  { content: 'صدای انفجار شدید در اطراف نطنز - ساکنان در پناهگاه', severity: 'critical', language: 'FA' },
-  { content: 'PMU sources confirm rocket launch against Al Udeid - unverified', severity: 'high', language: 'EN' },
-  { content: 'تحرکات نظامی غیرعادی در بندرعباس - ناوچه‌ها از بندر خارج شدند', severity: 'high', language: 'FA' },
-  { content: 'Resistance forces claim downing of US MQ-9 drone near Natanz', severity: 'medium', language: 'EN' },
-  { content: 'آژیر خطر در خارک - تخلیه کارکنان پایانه نفتی آغاز شد', severity: 'critical', language: 'FA' },
-  { content: 'Secondary explosions reported Parchin military complex - SIGACT', severity: 'critical', language: 'EN' },
-  { content: 'گروه بسیج: بسیج سراسری نیروها در سراسر تهران', severity: 'medium', language: 'FA' },
-  { content: 'Kataib claims successful attack on Camp Arifjan Kuwait - not confirmed by CENTCOM', severity: 'high', language: 'EN' },
-  { content: 'آتش‌سوزی در پالایشگاه آبادان پس از اصابت موشک', severity: 'high', language: 'FA' },
-  { content: 'IRGCN fast boats departing Jask - heading toward Strait of Hormuz', severity: 'high', language: 'EN' },
-  { content: 'منابع مقاومت: سامانه اس-300 تهران فعال و آتشباری می‌کند', severity: 'medium', language: 'FA' },
-  { content: 'Ansar Allah media wing claims Houthi drone launched toward Nevatim AB', severity: 'high', language: 'EN' },
-  { content: 'قطع اینترنت در استان اصفهان - جنگ سایبری ادامه دارد', severity: 'medium', language: 'FA' },
-  { content: 'FLASH: Tunnels near Fordow showing unusual vehicle traffic on satellite', severity: 'critical', language: 'EN' },
+  // Verified events in Farsi
+  { content: 'رهبر کشته شد - ۴۰ مقام ارشد در حملات اولیه کشته شدند - رسانه دولتی از کار افتاده', severity: 'critical', language: 'FA' },
+  { content: '۵۵۵ کشته طبق هلال احمر - ۱۵۸ دانش‌آموز در مینـاب کشته شدند', severity: 'critical', language: 'FA' },
+  { content: '۹ کشتی نیروی دریایی غرق شده - مقر فرماندهی نیروی دریایی تخریب شده - خلیج عمان از دست رفت', severity: 'critical', language: 'FA' },
+  { content: 'تنگه هرمز بسته اعلام شد - جنگ الکترونیکی در تنگه فعال', severity: 'high', language: 'FA' },
+  { content: 'سفیر ایران در آژانس: نطنز هدف قرار گرفت - آژانس: خسارت تایید نشده', severity: 'critical', language: 'FA' },
+  { content: 'حزب‌الله موشک به شمال اسرائیل شلیک کرد - اولین بار از آتش‌بس نوامبر ۲۰۲۴', severity: 'critical', language: 'FA' },
+  // Verified events in English
+  { content: 'CONFIRMED: Khamenei killed — 40+ senior leaders dead in opening strikes (Reuters)', severity: 'critical', language: 'EN' },
+  { content: 'True Promise 4: 27 US bases targeted — 7th/8th waves ongoing — IRGC claims hit on USS Lincoln (Al Jazeera)', severity: 'critical', language: 'EN' },
+  { content: 'UAE attacked: 165 BM + 541 drones — 21 drones penetrated — 3 KIA 58 WIA (Al Jazeera)', severity: 'high', language: 'EN' },
+  { content: 'Kuwait: all 97 BM + 283 drones intercepted — but airport hit by single drone (Al Jazeera)', severity: 'high', language: 'EN' },
+  { content: '6 US aircrew killed — F-15Es shot down by Kuwaiti Patriot battery — friendly fire [A2] (Reuters)', severity: 'critical', language: 'EN' },
+  { content: 'IDF: 1,200+ munitions across 24/31 provinces — 7 security leaders killed — state broadcaster destroyed (IDF)', severity: 'critical', language: 'EN' },
+  { content: 'Warhead near Temple Mount — 40+ buildings hit in Tel Aviv — 9+ KIA 121 WIA in Israel (Al Jazeera/IDF)', severity: 'critical', language: 'EN' },
+  { content: 'Hezbollah rockets at northern Israel — IDF retaliating Beirut suburbs — 31 killed 149 WIA Lebanon (Al Jazeera)', severity: 'critical', language: 'EN' },
+  { content: 'Dubai airport shut down — Burj Al Arab fire — Jebel Ali port fire — airspace closures 7 countries (Fox/Al Jazeera)', severity: 'high', language: 'EN' },
+  { content: 'Bahrain: 5th Fleet HQ targeted — 45 missiles shot down — port worker killed (Al Jazeera)', severity: 'high', language: 'EN' },
+  { content: 'Qatar: 65 missiles + 12 drones — most intercepted — 16 injured — explosions in Doha (Al Jazeera)', severity: 'high', language: 'EN' },
+  { content: 'Cyprus: drone hits British air base — limited damage — sovereign base area (Al Jazeera)', severity: 'medium', language: 'EN' },
 ];
 
+// VERIFIED Snapchat geolocated content — based on Reuters, Al Jazeera, IDF, Fox News reporting
 const SNAPCHAT_MESSAGES: { content: string; severity: SocmintSeverity }[] = [
-  { content: 'Geolocated video: Large fire visible from Isfahan industrial zone - matching UCF coords', severity: 'critical' },
-  { content: 'Crowd panic footage Tehran Valiasr Square - air raid sirens active', severity: 'high' },
-  { content: 'Snap Map heat activity spike: Bandar Abbas port area - military movement', severity: 'high' },
-  { content: 'User footage: Contrails over Shiraz consistent with ballistic intercept', severity: 'medium' },
-  { content: 'Geolocated: Smoke column Parchin military complex - 35.52N 51.77E', severity: 'critical' },
-  { content: 'Crowd gathering Bushehr - reports of evacuation order for NPP perimeter', severity: 'high' },
-  { content: 'Night vision footage: Anti-aircraft fire Tabriz - multiple bursts', severity: 'medium' },
-  { content: 'Snap Map: Road closures Tehran-Qom highway - military checkpoints', severity: 'medium' },
-  { content: 'GEOLOCATED: Fires at Kharg Island oil terminal - matching P1 target coords', severity: 'critical' },
-  { content: 'User video: Low-flying aircraft over Arak - possibly cruise missiles', severity: 'high' },
-  { content: 'Snap activity drop-off Isfahan region - possible internet shutdown', severity: 'medium' },
-  { content: 'Multiple users reporting explosions near Semnan space center', severity: 'high' },
+  { content: 'Geolocated Dubai: airport area — visible damage — flights cancelled — third closure since Feb 28 (Fox News)', severity: 'critical' },
+  { content: 'Snap Map Dubai: Burj Al Arab area — minor fire from intercepted drone debris (Al Jazeera)', severity: 'high' },
+  { content: 'Snap Map Dubai: Jebel Ali Port — berth fire visible — emergency response (Al Jazeera)', severity: 'high' },
+  { content: 'User footage Tel Aviv: 40+ buildings with damage — warhead debris — emergency services (Al Jazeera)', severity: 'critical' },
+  { content: 'Snap Map Kuwait: airport area — drone impact damage — flights suspended (Fox News / Al Jazeera)', severity: 'critical' },
+  { content: 'Geolocated Doha: explosions heard — 3 consecutive days — 65 missiles + 12 drones (Al Jazeera)', severity: 'high' },
+  { content: 'Snap Map Manama: Mina Salman port area — fire visible — 5th Fleet HQ targeted (Al Jazeera)', severity: 'high' },
+  { content: 'User footage Bandar Abbas: naval base area — 9 ships sunk per Reuters — debris visible', severity: 'critical' },
+  { content: 'Snap Map Tehran: aftermath footage — 40+ senior leaders killed per Reuters — heavy security', severity: 'critical' },
+  { content: 'Geolocated Minab: school area — 158 students killed per Iran claims (Al Jazeera)', severity: 'critical' },
+  { content: 'Snap Map northern Israel: Hezbollah rockets — first since Nov 2024 ceasefire (Al Jazeera)', severity: 'critical' },
+  { content: 'User footage Beirut suburbs: Israeli retaliatory strikes — 31 killed 149 wounded (Al Jazeera)', severity: 'critical' },
+  { content: 'Snap activity across Iran: Red Crescent reports 555 killed — civilian areas (Reuters)', severity: 'high' },
+  { content: 'Snap Map Strait of Hormuz: declared closed — EW activity — shipping disrupted (Al Jazeera / Fox News)', severity: 'high' },
 ];
 
 function generateSocmintItem(): SocmintItem {

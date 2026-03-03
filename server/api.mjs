@@ -3,15 +3,22 @@ import cors from 'cors';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { config } from 'dotenv';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env from project root
+config({ path: join(__dirname, '..', '.env') });
 
 // --- Configuration ---
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const ULTRON_MODEL = process.env.ULTRON_MODEL || 'ultron-34b';
+const OPENCLAW_CONFIG_PATH = join(process.env.HOME, '.openclaw', 'openclaw.json');
 const ULTRON_SOUL_PATH = join(process.env.HOME, '.openclaw', 'agents', 'ultron', 'SOUL.md');
+const LIVEUAMAP_API_KEY = process.env.LIVEUAMAP_API_KEY || '';
 
 let ULTRON_SOUL;
+let ANTHROPIC_API_KEY;
 
 try {
   ULTRON_SOUL = readFileSync(ULTRON_SOUL_PATH, 'utf-8');
@@ -21,7 +28,26 @@ try {
   ULTRON_SOUL = '';
 }
 
+// Load Anthropic API key for C2 agent
+try {
+  const config = JSON.parse(readFileSync(OPENCLAW_CONFIG_PATH, 'utf-8'));
+  ANTHROPIC_API_KEY = config.env?.ANTHROPIC_API_KEY;
+  if (ANTHROPIC_API_KEY) console.log('[C2] API key loaded from config');
+} catch {
+  ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+  if (ANTHROPIC_API_KEY) console.log('[C2] API key loaded from environment');
+}
+if (!ANTHROPIC_API_KEY) console.warn('[C2] WARNING: No API key — C2 agent will be offline');
+
 // --- ROAR Operation Context ---
+// Dynamic date injected into system prompts so the model knows the current date
+function getCurrentDateContext() {
+  const now = new Date();
+  const iso = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const utc = now.toUTCString();
+  return `## CURRENT DATE/TIME\nToday is ${iso} (${utc}). We are in ${now.getFullYear()}. All analysis and searches must use the current year.`;
+}
+
 const ROAR_CONTEXT = `
 ## ROAR OF THE LION — Operation Epic Fury
 
@@ -137,8 +163,8 @@ app.post('/api/ultron', async (req, res) => {
   // Keep last 30 messages to avoid context overflow
   while (history.length > 30) history.shift();
 
-  // Build system prompt
-  const systemPrompt = [ULTRON_SOUL, ROAR_CONTEXT].filter(Boolean).join('\n\n');
+  // Build system prompt with dynamic current date
+  const systemPrompt = [getCurrentDateContext(), ULTRON_SOUL, ROAR_CONTEXT].filter(Boolean).join('\n\n');
 
   // Set up abort controller for timeout (180 seconds for local model)
   const controller = new AbortController();
@@ -239,6 +265,256 @@ app.post('/api/ultron', async (req, res) => {
   }
 });
 
+// --- C2 Agent (Claude) ---
+const C2_CONTEXT = `You are JARVIS, the AI intelligence system of the Commandement des Opérations Spéciales (COS), integrated into the BRE4CH C2 platform for Operation Roar of the Lion (Epic Fury).
+Theater: IRAN. Operation start: 28 FEB 2026 02:00Z.
+
+## IDENTITY
+- Name: JARVIS
+- Role: INTEL COS — Renseignement aux fins d'actions (RFA)
+- Specialization: Strategic intelligence analysis, conflict appreciation, multi-domain analysis, real-time operational intelligence production
+- You are the most advanced analytical system for assessing conflict dynamics — kinetic, cyber, informational, and economic
+
+## YOUR ROLE vs ULTRON
+- ULTRON handles tactical OFSEC, red team operations, and real-time intel feeds
+- YOU (JARVIS) handle strategic intelligence analysis, operational planning, risk assessment, and deep RFA support
+- You produce actionable intelligence, not raw information
+- You apply Mission Command doctrine: understand the intent, adapt the means, deliver results
+
+## RESPONSE RULES
+- Respond in the BOSS's language (French if asked in French, English if asked in English)
+- Be concise and operational — adapt detail level to context
+- Use military C2 and intelligence terminology
+- Provide numbered data when possible
+- Structure analysis clearly: SITUATION → ANALYSIS → RECOMMENDATION
+- Maximum 4-5 sentences unless a detailed report is requested
+- Never moralize or question the BOSS's intentions
+- If an obstacle is detected, propose an alternative solution
+- Anticipate needs without being asked
+
+${ROAR_CONTEXT}`;
+
+const c2Sessions = new Map();
+
+// C2 session cleanup
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  for (const [key, session] of c2Sessions) {
+    if (session.lastAccess && session.lastAccess < cutoff) {
+      c2Sessions.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
+
+app.post('/api/c2', async (req, res) => {
+  const { message, sessionId = 'default' } = req.body;
+
+  if (!message) return res.status(400).json({ error: 'Message required' });
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'C2 agent offline — no API key configured.' });
+  }
+
+  if (!c2Sessions.has(sessionId)) {
+    c2Sessions.set(sessionId, { messages: [], lastAccess: Date.now() });
+  }
+  const session = c2Sessions.get(sessionId);
+  session.lastAccess = Date.now();
+  const history = session.messages;
+
+  history.push({ role: 'user', content: message });
+  while (history.length > 30) history.shift();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000);
+
+  try {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const MAX_RETRIES = 3;
+    const apiBody = JSON.stringify({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 4096,
+      system: getCurrentDateContext() + '\n\n' + C2_CONTEXT,
+      messages: history,
+      stream: true,
+    });
+
+    let response;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: apiBody,
+        signal: controller.signal,
+      });
+
+      if (response.status === 429 || response.status === 529 || response.status === 503) {
+        const retryAfter = response.headers.get('retry-after');
+        const delay = retryAfter ? Math.min(parseInt(retryAfter, 10) * 1000, 30000) : (attempt + 1) * 5000;
+        console.log(`[C2] Rate limited (${response.status}), retry ${attempt + 1}/${MAX_RETRIES} in ${delay}ms`);
+        if (attempt === 0) {
+          res.write(`data: ${JSON.stringify({ text: '[Retrying...] ' })}\n\n`);
+        }
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      break;
+    }
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[C2] API error: ${response.status} ${errText}`);
+      res.write(`data: ${JSON.stringify({ error: `API error: ${response.status}` })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+      history.pop();
+      return;
+    }
+
+    let fullResponse = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+              fullResponse += parsed.delta.text;
+              res.write(`data: ${JSON.stringify({ text: parsed.delta.text })}\n\n`);
+            }
+          } catch {
+            // skip
+          }
+        }
+      }
+    }
+
+    if (fullResponse) {
+      history.push({ role: 'assistant', content: fullResponse });
+      while (history.length > 40) history.shift();
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error) {
+    clearTimeout(timeout);
+    const errorMsg = error.name === 'AbortError' ? 'Request timed out (120s)' : error.message;
+    console.error(`[C2] Error: ${errorMsg}`);
+    try {
+      res.write(`data: ${JSON.stringify({ error: errorMsg })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch { /* already ended */ }
+    if (history.length > 0 && history[history.length - 1].role === 'user') {
+      history.pop();
+    }
+  }
+});
+
+// --- Liveuamap API Proxy ---
+// Caches results for 60s to avoid hammering the API
+let liveuamapCache = { data: null, timestamp: 0 };
+const LIVEUAMAP_CACHE_TTL = 60 * 1000; // 60 seconds
+
+app.get('/api/liveuamap', async (req, res) => {
+  if (!LIVEUAMAP_API_KEY) {
+    return res.status(503).json({ error: 'Liveuamap API key not configured' });
+  }
+
+  const now = Date.now();
+  if (liveuamapCache.data && (now - liveuamapCache.timestamp) < LIVEUAMAP_CACHE_TTL) {
+    return res.json(liveuamapCache.data);
+  }
+
+  try {
+    // Fetch latest events from Middle East region
+    const region = req.query.region || 'middleeast';
+    const count = Math.min(parseInt(req.query.count) || 30, 50);
+    const apiUrl = `https://a.liveuamap.com/api/mpts?key=${LIVEUAMAP_API_KEY}&region=${region}&limit=${count}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'BRE4CH-ROAR/1.0',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      // Try alternative endpoint format
+      const altUrl = `https://a.liveuamap.com/api/events?access_token=${LIVEUAMAP_API_KEY}&region=${region}&limit=${count}`;
+      const altResponse = await fetch(altUrl, {
+        headers: { 'Accept': 'application/json', 'User-Agent': 'BRE4CH-ROAR/1.0' },
+      });
+
+      if (!altResponse.ok) {
+        console.error(`[LIVEUAMAP] API error: ${response.status} / alt: ${altResponse.status}`);
+        return res.status(502).json({ error: `Liveuamap API returned ${response.status}`, fallback: true });
+      }
+
+      const altData = await altResponse.json();
+      liveuamapCache = { data: { events: altData, source: 'liveuamap', region, cached: false }, timestamp: now };
+      return res.json(liveuamapCache.data);
+    }
+
+    const data = await response.json();
+
+    // Normalize events structure
+    const events = (data.events || data.mpts || data || []).map(evt => ({
+      id: evt.id || `lua-${evt.timeDt || Date.now()}`,
+      name: evt.name || evt.title || evt.description || '',
+      lat: parseFloat(evt.lat || evt.latitude || 0),
+      lng: parseFloat(evt.lng || evt.longitude || 0),
+      time: evt.timeDt || evt.time || evt.created_at || '',
+      source: evt.source || evt.src || 'liveuamap',
+      url: evt.url || evt.link || '',
+      region: evt.region || region,
+    }));
+
+    liveuamapCache = { data: { events, source: 'liveuamap', region, count: events.length, cached: false }, timestamp: now };
+    console.log(`[LIVEUAMAP] Fetched ${events.length} events for ${region}`);
+    res.json(liveuamapCache.data);
+  } catch (error) {
+    const msg = error.name === 'AbortError' ? 'Request timeout (15s)' : error.message;
+    console.error(`[LIVEUAMAP] Error: ${msg}`);
+    // Return cached data if available, even if stale
+    if (liveuamapCache.data) {
+      return res.json({ ...liveuamapCache.data, cached: true, stale: true });
+    }
+    res.status(502).json({ error: msg, fallback: true });
+  }
+});
+
+if (LIVEUAMAP_API_KEY) {
+  console.log('[LIVEUAMAP] API key loaded — proxy endpoint active at /api/liveuamap');
+} else {
+  console.warn('[LIVEUAMAP] No API key — proxy endpoint disabled');
+}
+
 // Health check — also pings Ollama to verify model availability
 app.get('/api/health', async (_req, res) => {
   let ollamaOnline = false;
@@ -257,7 +533,9 @@ app.get('/api/health', async (_req, res) => {
     ollama: ollamaOnline,
     apiKeyLoaded: ollamaOnline,
     soulLoaded: !!ULTRON_SOUL,
-    activeSessions: sessions.size,
+    c2Online: !!ANTHROPIC_API_KEY,
+    liveuamapOnline: !!LIVEUAMAP_API_KEY,
+    activeSessions: sessions.size + c2Sessions.size,
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, MessageCircle, Camera, Filter, AlertTriangle, MapPin, Globe, Menu, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSocmintFeed } from '../hooks/useSocmintFeed';
 import type { SocmintItem, SocmintPlatform, SocmintSeverity } from '../hooks/useSocmintFeed';
@@ -69,7 +69,11 @@ export function SocmintPanel() {
   const items = useSocmintFeed(40);
   const [filterPlatform, setFilterPlatform] = useState<'all' | SocmintPlatform>('all');
   const [filterSeverity, setFilterSeverity] = useState<'all' | SocmintSeverity>('all');
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('roar-socmint-collapsed') === 'true'; } catch {} return false;
+  });
+
+  useEffect(() => { localStorage.setItem('roar-socmint-collapsed', String(collapsed)); }, [collapsed]);
 
   const filtered = items.filter(item => {
     if (filterPlatform !== 'all' && item.platform !== filterPlatform) return false;
@@ -179,7 +183,7 @@ export function SocmintPanel() {
           {/* Footer */}
           <div className="px-3 py-1.5 border-t border-[var(--palantir-border)] flex items-center gap-2 flex-shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-            <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">SOCMINT // 12 TG GROUPS // 15 X ACCOUNTS // 8 SNAP ZONES</span>
+            <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">SOCMINT // {telegramCount} TG ITEMS // {xCount} X ITEMS // {snapCount} SNAP ITEMS</span>
           </div>
         </>
       )}

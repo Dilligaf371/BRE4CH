@@ -65,7 +65,7 @@ export const IRAN_BOUNDS: [[number, number], [number, number]] = [[25.0, 44.0], 
 // Operation Epic Fury / Roar of the Lion began Feb 28, 2026 ~02:00 UTC
 // First wave of US-Israeli strikes on Iran
 export const MISSION_START = new Date('2026-02-28T02:00:00Z').getTime();
-export const CURRENT_PHASE: MissionPhase = 'PHASE III - STRIKE';
+export const CURRENT_PHASE: MissionPhase = 'PHASE IV - EXPLOIT';
 export const THREAT_LEVEL: ThreatLevel = 'CRITICAL';
 
 export const INFRA_COLORS: Record<InfraType, string> = {
@@ -92,42 +92,54 @@ export const STATUS_COLORS: Record<InfraStatus, string> = {
 
 export const infrastructure: InfrastructurePoint[] = [
   // Nuclear facilities
-  { id: 'inf-01', name: 'Natanz', nameEn: 'Natanz Enrichment', type: 'nuclear', coords: [33.7233, 51.7233], status: 'active', priority: 1, description: 'Main uranium enrichment center - IR-6/IR-8 centrifuges', defenseLevel: 95 },
-  { id: 'inf-02', name: 'Fordow', nameEn: 'Fordow Underground', type: 'nuclear', coords: [34.7083, 51.5833], status: 'active', priority: 1, description: 'Underground enrichment facility - mountain bunker', defenseLevel: 98 },
-  { id: 'inf-03', name: 'Bushehr', nameEn: 'Bushehr NPP', type: 'nuclear', coords: [28.8333, 50.8833], status: 'active', priority: 2, description: 'Nuclear power plant - VVER-1000 reactor', defenseLevel: 72 },
-  { id: 'inf-04', name: 'Isfahan UCF', nameEn: 'Isfahan Nuclear Tech', type: 'nuclear', coords: [32.6546, 51.6680], status: 'damaged', priority: 2, description: 'Uranium conversion center UF6 - damaged', defenseLevel: 45 },
-  { id: 'inf-05', name: 'Arak', nameEn: 'Arak Heavy Water', type: 'nuclear', coords: [34.0493, 49.2433], status: 'active', priority: 1, description: 'Heavy water reactor IR-40 - plutonium production', defenseLevel: 88 },
+  // VERIFIED: Iran IAEA ambassador says Natanz was targeted (Al Jazeera, Mar 2)
+  // VERIFIED: IAEA says NO confirmed damage to nuclear facilities as of Mar 2
+  // VERIFIED: IAEA "cannot rule out radiological release" (Reuters)
+  // VERIFIED: June 2025 strikes already damaged Fordow/Natanz — "almost all sensitive equipment at Fordow destroyed" (IAEA Sep 2025)
+  { id: 'inf-01', name: 'Natanz', nameEn: 'Natanz Enrichment', type: 'nuclear', coords: [33.7233, 51.7233], status: 'unknown', priority: 1, description: 'Iran IAEA ambassador confirms targeted — IAEA: no confirmed damage as of Mar 2 — cannot rule out radiological release (Reuters/Al Jazeera)', defenseLevel: 50 },
+  { id: 'inf-02', name: 'Fordow', nameEn: 'Fordow Underground', type: 'nuclear', coords: [34.7083, 51.5833], status: 'damaged', priority: 1, description: 'Already damaged by June 2025 strikes — almost all sensitive equipment destroyed (IAEA Sep 2025) — current status unknown', defenseLevel: 40 },
+  { id: 'inf-03', name: 'Bushehr', nameEn: 'Bushehr NPP', type: 'nuclear', coords: [28.8333, 50.8833], status: 'active', priority: 2, description: 'Nuclear power plant — VVER-1000 — NOT targeted (Russian-built civilian reactor — Reuters)', defenseLevel: 72 },
+  { id: 'inf-04', name: 'Isfahan UCF', nameEn: 'Isfahan Nuclear Tech', type: 'nuclear', coords: [32.6546, 51.6680], status: 'damaged', priority: 2, description: 'Uranium conversion — damaged in June 2025 strikes — part of 24/31 provinces hit (IDF)', defenseLevel: 30 },
+  { id: 'inf-05', name: 'Arak', nameEn: 'Arak Heavy Water', type: 'nuclear', coords: [34.0493, 49.2433], status: 'unknown', priority: 1, description: 'Heavy water reactor IR-40 — no specific confirmed reports from verified sources', defenseLevel: 50 },
 
   // Command & Control
-  { id: 'inf-06', name: 'Tehran HQ IRGC', nameEn: 'IRGC Supreme Command', type: 'command', coords: [35.6892, 51.3890], status: 'active', priority: 1, description: 'IRGC Supreme HQ - command center', defenseLevel: 99 },
-  { id: 'inf-07', name: 'Parchin', nameEn: 'Parchin Military Complex', type: 'command', coords: [35.5175, 51.7711], status: 'active', priority: 1, description: 'Military complex - weapons R&D / nuclear testing', defenseLevel: 90 },
+  // VERIFIED: 40+ senior Iranian leaders killed including Khamenei (Reuters)
+  // VERIFIED: 7 Iranian security leaders confirmed killed (IDF)
+  { id: 'inf-06', name: 'Tehran HQ IRGC', nameEn: 'IRGC Supreme Command', type: 'command', coords: [35.6892, 51.3890], status: 'damaged', priority: 1, description: '40+ senior leaders killed incl. Khamenei — 7 security leaders confirmed KIA (Reuters/IDF)', defenseLevel: 40 },
+  { id: 'inf-07', name: 'Parchin', nameEn: 'Parchin Military Complex', type: 'command', coords: [35.5175, 51.7711], status: 'unknown', priority: 1, description: 'Military complex — part of 1,000+ targets hit (Reuters) — no specific BDA from verified sources', defenseLevel: 50 },
 
-  // Airbases
-  { id: 'inf-08', name: 'Shiraz AFB', nameEn: 'Shiraz Air Base', type: 'airbase', coords: [29.5392, 52.5898], status: 'active', priority: 2, description: 'Tactical air base - F-14 / Su-35', defenseLevel: 78 },
-  { id: 'inf-09', name: 'Tabriz AFB', nameEn: 'Tabriz Air Base', type: 'airbase', coords: [38.0667, 46.2833], status: 'active', priority: 3, description: 'Northern air base - MiG-29 / Su-24', defenseLevel: 65 },
-  { id: 'inf-10', name: 'Isfahan AFB', nameEn: 'Isfahan 8th TAB', type: 'airbase', coords: [32.7500, 51.8612], status: 'damaged', priority: 2, description: '8th tactical air base - damaged', defenseLevel: 30 },
-  { id: 'inf-11', name: 'Mehrabad', nameEn: 'Mehrabad Air Base', type: 'airbase', coords: [35.6894, 51.3113], status: 'active', priority: 2, description: 'Tehran joint-use base - C-130 / Il-76 transport', defenseLevel: 85 },
+  // Airbases — IDF confirms 24/31 provinces hit, 1,200+ munitions (IDF)
+  { id: 'inf-08', name: 'Shiraz AFB', nameEn: 'Shiraz Air Base', type: 'airbase', coords: [29.5392, 52.5898], status: 'unknown', priority: 2, description: 'Tactical air base — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
+  { id: 'inf-09', name: 'Tabriz AFB', nameEn: 'Tabriz Air Base', type: 'airbase', coords: [38.0667, 46.2833], status: 'unknown', priority: 3, description: 'Northern air base — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
+  { id: 'inf-10', name: 'Isfahan AFB', nameEn: 'Isfahan 8th TAB', type: 'airbase', coords: [32.7500, 51.8612], status: 'unknown', priority: 2, description: '8th tactical air base — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
+  { id: 'inf-11', name: 'Mehrabad', nameEn: 'Mehrabad Air Base', type: 'airbase', coords: [35.6894, 51.3113], status: 'unknown', priority: 2, description: 'Tehran joint-use base — no specific BDA confirmed from verified sources', defenseLevel: 50 },
 
   // Naval
-  { id: 'inf-12', name: 'Bandar Abbas', nameEn: 'Bandar Abbas Naval', type: 'naval', coords: [27.1833, 56.2667], status: 'active', priority: 1, description: 'Main naval base - Strait of Hormuz - Kilo-class submarines', defenseLevel: 82 },
-  { id: 'inf-13', name: 'Jask', nameEn: 'Jask Naval Forward', type: 'naval', coords: [25.6514, 57.7711], status: 'active', priority: 2, description: 'Forward naval base - IRGCN fast attack craft', defenseLevel: 60 },
+  // VERIFIED: 9 Iranian naval ships sunk, naval HQ "largely destroyed" (Reuters/Trump)
+  // VERIFIED: Iranian naval presence denied in Gulf of Oman within 48 hours (Reuters)
+  // VERIFIED: Strait of Hormuz declared closed by Iranian general (Al Jazeera)
+  { id: 'inf-12', name: 'Bandar Abbas', nameEn: 'Bandar Abbas Naval HQ', type: 'naval', coords: [27.1833, 56.2667], status: 'damaged', priority: 1, description: 'Naval HQ "largely destroyed" — 9 ships sunk — naval presence denied in Gulf of Oman within 48h (Reuters)', defenseLevel: 25 },
+  { id: 'inf-13', name: 'Jask', nameEn: 'Jask Naval Forward', type: 'naval', coords: [25.6514, 57.7711], status: 'unknown', priority: 2, description: 'Forward naval base — Strait of Hormuz declared closed (Al Jazeera) — EW activity detected (Fox News)', defenseLevel: 40 },
 
-  // Missile sites
-  { id: 'inf-14', name: 'Khorramabad', nameEn: 'Khorramabad MRBM', type: 'missile', coords: [33.4878, 48.3558], status: 'active', priority: 1, description: 'Ballistic missile base - Shahab-3 / Emad', defenseLevel: 92 },
-  { id: 'inf-15', name: 'Tabriz Missiles', nameEn: 'Tabriz Missile Base', type: 'missile', coords: [37.8500, 46.3500], status: 'active', priority: 2, description: 'Northwest missile launch base - Fateh-110', defenseLevel: 75 },
-  { id: 'inf-16', name: 'Semnan', nameEn: 'Semnan Space/Missile', type: 'missile', coords: [35.5833, 53.4167], status: 'active', priority: 1, description: 'Imam Khomeini Space Center - ICBM / SLV dual-use', defenseLevel: 88 },
+  // Missile sites — IRGC still firing True Promise 4 waves (Al Jazeera)
+  { id: 'inf-14', name: 'Khorramabad', nameEn: 'Khorramabad MRBM', type: 'missile', coords: [33.4878, 48.3558], status: 'unknown', priority: 1, description: 'Ballistic missile base — IRGC still launching True Promise 4 waves (Al Jazeera)', defenseLevel: 50 },
+  { id: 'inf-15', name: 'Tabriz Missiles', nameEn: 'Tabriz Missile Base', type: 'missile', coords: [37.8500, 46.3500], status: 'unknown', priority: 2, description: 'Northwest missile base — within 24/31 provinces hit (IDF)', defenseLevel: 50 },
+  { id: 'inf-16', name: 'Semnan', nameEn: 'Semnan Space/Missile', type: 'missile', coords: [35.5833, 53.4167], status: 'unknown', priority: 1, description: 'Space/missile center — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
 
   // Oil / Energy
-  { id: 'inf-17', name: 'Abadan', nameEn: 'Abadan Refinery', type: 'oil', coords: [30.3472, 48.2933], status: 'damaged', priority: 2, description: 'Oil refinery - 450,000 bpd - damaged', defenseLevel: 35 },
-  { id: 'inf-18', name: 'Kharg Island', nameEn: 'Kharg Oil Terminal', type: 'oil', coords: [29.2333, 50.3167], status: 'active', priority: 1, description: 'Offshore oil terminal - 90% of Iran exports', defenseLevel: 70 },
+  { id: 'inf-17', name: 'Abadan', nameEn: 'Abadan Refinery', type: 'oil', coords: [30.3472, 48.2933], status: 'unknown', priority: 2, description: 'Oil refinery — no specific confirmed reports from Reuters/Fox/IDF/Al Jazeera', defenseLevel: 50 },
+  { id: 'inf-18', name: 'Kharg Island', nameEn: 'Kharg Oil Terminal', type: 'oil', coords: [29.2333, 50.3167], status: 'unknown', priority: 1, description: 'Offshore terminal — oil exports disrupted — no specific BDA from verified sources', defenseLevel: 50 },
 
-  // Radar / Air Defense
-  { id: 'inf-19', name: 'S-300 Tehran', nameEn: 'Tehran AD Network', type: 'radar', coords: [35.7500, 51.5000], status: 'active', priority: 1, description: 'S-300PMU2 battery - capital air defense', defenseLevel: 96 },
-  { id: 'inf-20', name: 'Bavar-373', nameEn: 'Bavar-373 Isfahan', type: 'radar', coords: [32.8000, 51.9000], status: 'damaged', priority: 2, description: 'Indigenous Bavar-373 AA system - damaged', defenseLevel: 40 },
+  // Radar / Air Defense — part of 30+ strike operations against BM and AD arrays (IDF)
+  { id: 'inf-19', name: 'S-300 Tehran', nameEn: 'Tehran AD Network', type: 'radar', coords: [35.7500, 51.5000], status: 'unknown', priority: 1, description: 'S-300PMU2 — IDF confirms 30+ strike ops vs BM and AD arrays — specific BDA unconfirmed', defenseLevel: 50 },
+  { id: 'inf-20', name: 'Bavar-373', nameEn: 'Bavar-373 Isfahan', type: 'radar', coords: [32.8000, 51.9000], status: 'unknown', priority: 2, description: 'Bavar-373 system — part of AD arrays targeted by 30+ IDF strike ops — specific BDA unconfirmed', defenseLevel: 50 },
 
   // Military bases
-  { id: 'inf-21', name: 'Qom IRGC', nameEn: 'Qom IRGC Base', type: 'military', coords: [34.6401, 50.8764], status: 'active', priority: 1, description: 'IRGC base - ground forces - T-72 armor', defenseLevel: 80 },
-  { id: 'inf-22', name: 'Kerman', nameEn: 'Kerman Military', type: 'military', coords: [30.2839, 57.0834], status: 'active', priority: 3, description: 'Eastern military base - garrison + ammo depot', defenseLevel: 55 },
+  { id: 'inf-21', name: 'Qom IRGC', nameEn: 'Qom IRGC Base', type: 'military', coords: [34.6401, 50.8764], status: 'unknown', priority: 1, description: 'IRGC base — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
+  { id: 'inf-22', name: 'Kerman', nameEn: 'Kerman Military', type: 'military', coords: [30.2839, 57.0834], status: 'unknown', priority: 3, description: 'Eastern military base — within 24/31 provinces hit (IDF) — no specific BDA confirmed', defenseLevel: 50 },
+
+  // State Media — VERIFIED: struck and dismantled (IDF)
+  { id: 'inf-23', name: 'IRIB Tehran', nameEn: 'State Broadcaster', type: 'command', coords: [35.7000, 51.4200], status: 'neutralized', priority: 2, description: 'Iranian state broadcaster — struck and dismantled (IDF confirmed)', defenseLevel: 0 },
 ];
 
 // --------------- EPIC FURY FORCE POSITIONS ---------------
@@ -221,13 +233,19 @@ export const epicFuryPositions: MilitaryPosition[] = [
   { id: 'ef-33', callsign: 'HAIFA-NAVY', type: 'allied', coords: [32.8184, 34.9885], unit: 'Israeli Navy HQ / Haifa', branch: 'Israeli Navy', strength: 92, readiness: 96, lastUpdate: 'LIVE', mission: 'Haifa Naval Base - main IDF naval base - 7th Fleet (5x Dolphin-class submarines w/ AIP, nuclear-capable SLCMs) - 3rd Fleet (Sa\'ar 6 corvettes w/ Iron Dome & Barak-8) - missile boat squadrons' },
 
   // =======================================================================
-  // HOSTILE (IRGC) POSITIONS
+  // HOSTILE (IRGC) POSITIONS — Verified data from Reuters/Al Jazeera/IDF/Fox News
   // =======================================================================
-  { id: 'hst-01', callsign: 'IRGC-QF', type: 'hostile', coords: [34.2, 51.5], unit: 'Quds Force', branch: 'IRGC', strength: 45, readiness: 60, lastUpdate: 'LIVE', mission: 'External operations - proxy coordination' },
-  { id: 'hst-02', callsign: 'IRGC-GF', type: 'hostile', coords: [33.5, 50.5], unit: 'IRGC Ground Forces', branch: 'IRGC', strength: 62, readiness: 55, lastUpdate: 'LIVE', mission: 'Internal defense - Isfahan' },
-  { id: 'hst-03', callsign: 'IRGC-ASF', type: 'hostile', coords: [35.3, 51.8], unit: 'IRGC Aerospace Force', branch: 'IRGC', strength: 38, readiness: 40, lastUpdate: 'LIVE', mission: 'Mobile ballistic launchers - TEL' },
-  { id: 'hst-04', callsign: 'IRGCN-1', type: 'hostile', coords: [26.9, 56.0], unit: 'IRGC Navy', branch: 'IRGCN', strength: 50, readiness: 65, lastUpdate: 'LIVE', mission: 'Fast attack craft - mines - Hormuz' },
-  { id: 'hst-05', callsign: 'BASIJ-1', type: 'hostile', coords: [32.8, 52.0], unit: 'Basij Resistance', branch: 'Basij', strength: 32, readiness: 25, lastUpdate: 'LIVE', mission: 'Militia - civil defense' },
+  // VERIFIED: 40+ senior leaders killed incl Khamenei (Reuters)
+  // VERIFIED: 9 naval ships sunk, naval HQ destroyed (Reuters)
+  // VERIFIED: IRGC still launching True Promise 4 waves (Al Jazeera)
+  // VERIFIED: Strait of Hormuz declared closed (Al Jazeera)
+  // VERIFIED: 555 killed in Iran (Red Crescent via Reuters)
+  // VERIFIED: 158 students killed Minab school (Iran claims via Al Jazeera)
+  { id: 'hst-01', callsign: 'IRGC-QF', type: 'hostile', coords: [34.2, 51.5], unit: 'Quds Force', branch: 'IRGC', strength: 50, readiness: 50, lastUpdate: 'LIVE', mission: 'Leadership decimated — 40+ senior leaders killed including Khamenei (Reuters) — 7 security leaders confirmed KIA (IDF)' },
+  { id: 'hst-02', callsign: 'IRGC-GF', type: 'hostile', coords: [33.5, 50.5], unit: 'IRGC Ground Forces', branch: 'IRGC', strength: 60, readiness: 50, lastUpdate: 'LIVE', mission: '555 killed across Iran (Red Crescent via Reuters) — 1,000+ US targets hit (Reuters)' },
+  { id: 'hst-03', callsign: 'IRGC-ASF', type: 'hostile', coords: [35.3, 51.8], unit: 'IRGC Aerospace Force', branch: 'IRGC', strength: 50, readiness: 50, lastUpdate: 'LIVE', mission: 'True Promise 4 ongoing — 7th/8th waves launched (Al Jazeera) — 27 US bases targeted' },
+  { id: 'hst-04', callsign: 'IRGCN-1', type: 'hostile', coords: [26.9, 56.0], unit: 'IRGC Navy', branch: 'IRGCN', strength: 30, readiness: 30, lastUpdate: 'LIVE', mission: '9 ships sunk — naval HQ largely destroyed — Hormuz declared closed — EW activity (Reuters/Al Jazeera/Fox News)' },
+  { id: 'hst-05', callsign: 'BASIJ-1', type: 'hostile', coords: [32.8, 52.0], unit: 'Basij Resistance', branch: 'Basij', strength: 60, readiness: 50, lastUpdate: 'LIVE', mission: 'Civil defense — 158 students killed Minab school (Al Jazeera) — martial law reported' },
 ];
 
 // --------------- EVENT TEMPLATES ---------------
@@ -239,6 +257,11 @@ export const EVENT_TEMPLATES = {
     'Soumar cruise missile intercepted by Patriot PAC-3 - {sector}',
     'Drone swarm (x{count}) neutralized by EW jamming - {sector}',
     'Emad IRBM intercepted in terminal phase - THAAD - {sector}',
+    'Fateh-110 SRBM intercepted by Arrow-2 - trajectory from {sector}',
+    'Kaman-22 UAV engaged by F/A-18E AIM-9X - {sector} corridor',
+    'Mobin MRBM intercepted mid-course - Aegis BMD - {sector}',
+    'Houthi Toufan drone neutralized over Red Sea - Iron Dome - {sector}',
+    'IRGC Arash loitering munition engaged by C-RAM - {sector}',
   ],
   strike: [
     'Tomahawk strike confirmed on {target} - BDA ongoing',
@@ -246,6 +269,11 @@ export const EVENT_TEMPLATES = {
     'F-35A strike package confirmed on {target} - objective neutralized',
     'JDAM strike from F/A-18E on {target} - impact confirmed',
     'Successful cyber attack on C2 network - {target} offline',
+    'F-35I Adir - SDB II strike on mobile TEL near {target} - BDA: destroyed',
+    'B-52H CALCM salvo - 12x AGM-86C on {target} - secondary explosions',
+    'F-15E Strike Eagle - GBU-28 bunker buster on {target} underground facility',
+    'MQ-9 Reaper Hellfire strike - IRGC convoy near {target} - 4 vehicles destroyed',
+    'Tomahawk Block V strike on {target} - mission kill confirmed via IMINT',
   ],
   intel: [
     'SIGINT: IRGC communications intercepted - TEL movement toward {sector}',
@@ -253,6 +281,11 @@ export const EVENT_TEMPLATES = {
     'HUMINT: Source CARDINAL reports HVT movement toward {sector}',
     'ELINT: New SA-20 radar detected at {sector} - freq {freq}MHz',
     'OSINT: Abnormal Iranian network traffic detected - possible cyber counter-attack',
+    'SIGINT: IRGC Quds Force encrypted burst to Hezbollah - sector {sector}',
+    'IMINT: BDA confirms {target} runway cratered - non-operational',
+    'MASINT: Seismic activity consistent with underground detonation near {target}',
+    'SIGINT: Iranian civil defense frequency active - evacuation order {sector}',
+    'ELINT: Iranian EW jamming detected - GPS denied zone expanding {sector}',
   ],
   alert: [
     'ALERT: Launch detected from {sector} - tracking in progress',
@@ -260,6 +293,11 @@ export const EVENT_TEMPLATES = {
     'ALERT: Hostile force movement detected - {sector}',
     'ALERT: GPS jamming detected zone {sector} - high intensity',
     'ALERT: Unidentified submarine activity - Strait of Hormuz',
+    'ALERT: IRGCN mine-laying activity detected - Strait of Hormuz sector {sector}',
+    'ALERT: Proxy rocket barrage from southern Iraq - targeting {sector}',
+    'ALERT: Iranian Ghadir midget submarine contact - Gulf of Oman',
+    'ALERT: IRGC mobile TEL emerging from tunnel - {sector} - time-sensitive target',
+    'ALERT: Houthi anti-ship missile launched toward Red Sea shipping - {sector}',
   ],
   cyber: [
     'SCADA intrusion successful - Natanz centrifuges - 12% degradation',
@@ -267,6 +305,11 @@ export const EVENT_TEMPLATES = {
     'Malware deployed on Iranian air C2 network - data exfiltration',
     'IRGC tactical communications jammed - sector {sector}',
     'Bavar-373 radar system compromised - false echoes injected',
+    'Iranian banking SWIFT node disrupted - financial C2 degraded',
+    'Power grid SCADA access - Isfahan province rolling blackouts initiated',
+    'IRGC drone command frequency hijacked - 3 Shahed-136 redirected',
+    'Iranian state TV broadcast interrupted - replaced with coalition message',
+    'CyberAv3ngers counter-op detected and neutralized - no damage',
   ],
 };
 
@@ -276,24 +319,47 @@ export const FREQS = [2400, 3100, 5800, 8900, 9200, 10400, 14200];
 
 // --------------- INTEL TICKER MESSAGES ---------------
 
+// VERIFIED TICKER MESSAGES — Sources: Reuters, Al Jazeera, IDF, Fox News ONLY
 export const TICKER_MESSAGES = [
-  'FLASH // CVN-72 Abraham Lincoln CSG-3 operating Arabian Sea - CVW-9 strike ops active - VMFA-314 F-35C sorties ongoing',
-  'IMMEDIATE // CVN-78 Gerald R. Ford CSG-12 transiting Eastern Med - ordered to 5th Fleet AOR to join Lincoln',
-  'FLASH // 12x F-22A Raptors confirmed at Ovda AB Israel via satellite imagery - first-ever US offensive deployment in Israel',
-  'IMMEDIATE // Muwaffaq Salti AB Jordan - 60+ combat aircraft confirmed - 24x F-15E + 30x F-35A + A-10s staged',
-  'PRIORITY // Prince Sultan AB Saudi Arabia - 16x KC-135 + 6x KC-46A tankers + 3x E-11A BACN + E-3 AWACS deployed',
-  'FLASH // SSGN-729 USS Georgia - 154x Tomahawk TLAM capacity - participated in Operation Midnight Hammer June 2025',
-  'IMMEDIATE // NSA Bahrain 5th Fleet HQ reduced to <100 mission-critical personnel - all ships departed port Feb 26',
-  'PRIORITY // THAAD batteries deployed across Qatar, UAE, Jordan, Saudi Arabia - layered BMD architecture active',
-  'FLASH // Iranian missiles and drones striking 5th Fleet HQ Bahrain - 2 SATCOM terminals destroyed Feb 28',
-  'IMMEDIATE // DDG-57 Mitscher + DDG-112 Michael Murphy + LCS-30 Canberra patrolling Strait of Hormuz',
-  'PRIORITY // 80+ C-17A Globemaster III airlift missions into Middle East since Jan 16 - largest since 2003',
-  'FLASH // IAF Nevatim AB - 48x F-35I Adir operational - 116th/140th/117th squadrons at full readiness',
-  'IMMEDIATE // Camp Arifjan Kuwait - ARCENT fwd HQ - 13,500 US personnel across Kuwait bases - APS-5 prepositioned',
-  'PRIORITY // Ali Al Salem AB Kuwait - 386th AEW - MQ-9 Reaper + C-17/C-130 airlift hub - primary combat power gateway',
-  'FLASH // Iran-backed Saraya Awliya Al Dam drone strike on US forces Erbil - ammo depot near airport hit Mar 1',
-  'IMMEDIATE // Al Dhafra AB UAE - THAAD intercepts confirmed - 3,500 US personnel - RQ-4 / U-2 ISR active',
-  'PRIORITY // Israeli Navy Haifa - 5x Dolphin-class submarines w/ AIP - nuclear-capable SLCM second-strike platform',
+  // Leadership — Reuters
+  'FLASH // Khamenei killed in coalition strikes — 40+ senior Iranian leaders killed in opening wave (Reuters)',
+  'FLASH // 7 Iranian security leaders confirmed killed by IDF strikes (IDF)',
+  // US operations — Reuters
+  'FLASH // US forces hit 1,000+ targets in first 2 days of Operation Epic Fury (Reuters)',
+  'FLASH // 9 Iranian naval ships sunk — naval HQ "largely destroyed" (Reuters)',
+  'IMMEDIATE // Iranian naval presence denied in Gulf of Oman within 48 hours (Reuters)',
+  'PRIORITY // 6 US aircrew killed — F-15Es shot down by Kuwaiti Patriot battery — friendly fire [A2] (Reuters)',
+  'IMMEDIATE // Trump: operation could take "four to five weeks" (Reuters)',
+  'IMMEDIATE // Oil hits $155/barrel — Iranian exports disrupted — global energy crisis deepening (Reuters)',
+  // IDF operations — IDF
+  'FLASH // IAF drops 1,200+ munitions across 24 of 31 Iranian provinces — 30+ strike operations (IDF)',
+  'FLASH // IDF strikes and dismantles Iranian state broadcaster (IDF)',
+  // Iran True Promise 4 — Al Jazeera
+  'FLASH // Iran True Promise 4 launched — 27 US bases targeted — 7th/8th waves ongoing (Al Jazeera)',
+  'FLASH // IRGC claims targeting USS Abraham Lincoln with 4 ballistic missiles (Al Jazeera)',
+  'IMMEDIATE // Explosions reported in Dubai, Doha, Manama for 3 consecutive days (Al Jazeera)',
+  'FLASH // Warhead landed near Temple Mount — 40+ buildings damaged in Tel Aviv (Al Jazeera)',
+  'IMMEDIATE // Strait of Hormuz declared closed by Iranian general (Al Jazeera)',
+  // Gulf state damage — Al Jazeera
+  'IMMEDIATE // UAE: 165 BM + 2 cruise + 541 drones fired — 3 KIA 58 WIA — 21 drones penetrated (Al Jazeera / UAE MoD)',
+  'IMMEDIATE // Kuwait: 97 BM + 283 drones intercepted — Kuwait airport hit by drone — 1 KIA 32 WIA (Al Jazeera)',
+  'PRIORITY // Bahrain: 45 missiles + 9 drones shot down — 5th Fleet HQ targeted — 1 KIA 4 WIA (Al Jazeera)',
+  'PRIORITY // Qatar: 65 missiles + 12 drones — most intercepted — 16 injured (Al Jazeera)',
+  // Israel — IDF / Al Jazeera
+  'FLASH // Israel: 9+ KIA 121 WIA from Iranian strikes — Arrow-3 exo-atmospheric intercepts confirmed (IDF / Al Jazeera)',
+  // Iran casualties — Reuters / Al Jazeera
+  'IMMEDIATE // 555 killed in Iran per Red Crescent [B3] — 158 students killed in Minab [D4 Iran claim] (Reuters / Al Jazeera)',
+  // IAEA — Reuters / Al Jazeera
+  'PRIORITY // Iran IAEA ambassador confirms Natanz targeted — IAEA: no confirmed damage to nuclear facilities as of Mar 2 (Reuters / Al Jazeera)',
+  'PRIORITY // IAEA: "cannot rule out radiological release" from strikes near nuclear sites (Reuters)',
+  // Regional escalation — Al Jazeera
+  'FLASH // Hezbollah fires rockets at northern Israel — first since Nov 2024 ceasefire — IDF retaliates on Beirut suburbs (Al Jazeera)',
+  'IMMEDIATE // 31 killed, 149 wounded in Lebanon from Israeli retaliatory strikes (Al Jazeera)',
+  'IMMEDIATE // Dubai International Airport damaged and shut down — regional airspace closures across 7 countries (Fox News / Al Jazeera)',
+  'PRIORITY // Cyprus: drone hits British air base — limited damage (Al Jazeera)',
+  // Fox News
+  'IMMEDIATE // Electronic warfare activity detected in Strait of Hormuz (Fox News)',
+  'PRIORITY // Burj Al Arab minor fire from intercepted drone debris — Jebel Ali Port berth fire (Al Jazeera)',
 ];
 
 // --------------- HELPER FUNCTIONS ---------------

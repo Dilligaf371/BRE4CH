@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, Target, Bomb, Cpu, Flame, Rocket, Shield, Plane, Crosshair, Eye, Menu, ChevronDown, ChevronUp, Wifi, Lock, Database, Terminal } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { useRealtimeStats } from '../hooks/useRealtimeStats';
@@ -32,8 +32,8 @@ function StatCard({ icon, label, value, color, bgColor, pulse, small }: StatCard
   );
 }
 
-// Verified allied contribution data — Operation True Promise 4 retaliation (Mar 1, 2026)
-// Sources: CENTCOM, IDF, UAE MoD, Gulf News, CNN, NPR, Breaking Defense
+// Day 3 (Mar 3, 2026) — Verified allied data
+// Sources: Reuters, Al Jazeera, IDF, Fox News ONLY
 const ALLIED_FEEDS = [
   {
     id: 'usa',
@@ -43,12 +43,12 @@ const ALLIED_FEEDS = [
     borderColor: 'border-blue-500/30',
     bgColor: 'from-blue-500/10',
     stats: [
-      { label: 'INTERCEPTS', value: '100s', icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
-      { label: 'PATRIOT/THAAD', value: 'ACTIVE', icon: Rocket, color: 'text-blue-400', bg: 'bg-blue-500/20' },
-      { label: 'KIA', value: 4, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
-      { label: 'WIA', value: 5, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+      { label: 'TARGETS HIT', value: '1,000+', icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+      { label: 'SHIPS SUNK', value: 9, icon: Crosshair, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'NAVAL HQ', value: 'DESTROYED', icon: Bomb, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'KIA', value: 6, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
     ],
-    source: 'CENTCOM / CNN / NPR',
+    source: 'Reuters [A2]',
   },
   {
     id: 'israel',
@@ -58,26 +58,13 @@ const ALLIED_FEEDS = [
     borderColor: 'border-cyan-500/30',
     bgColor: 'from-cyan-500/10',
     stats: [
-      { label: 'ARROW/DS/DOME', value: 'ACTIVE', icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
       { label: 'MUNITIONS DROPPED', value: '1,200+', icon: Bomb, color: 'text-orange-400', bg: 'bg-orange-500/20' },
       { label: 'PROVINCES HIT', value: '24/31', icon: Crosshair, color: 'text-red-400', bg: 'bg-red-500/20' },
-      { label: 'CIVILIAN KIA', value: 6, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'STRIKE OPS', value: '30+', icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+      { label: 'KIA', value: 9, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'WIA', value: 121, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
     ],
-    source: 'IDF / CNN / Al Jazeera',
-  },
-  {
-    id: 'ksa',
-    name: 'KSA',
-    flag: '🇸🇦',
-    color: 'text-green-400',
-    borderColor: 'border-green-500/30',
-    bgColor: 'from-green-500/10',
-    stats: [
-      { label: 'TARGETS HIT', value: 'Riyadh+E.Prov', icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
-      { label: 'INTERCEPT STATUS', value: 'CONFIRMED', icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
-      { label: 'PATRIOT/THAAD', value: 'ACTIVE', icon: Rocket, color: 'text-green-400', bg: 'bg-green-500/20' },
-    ],
-    source: 'Saudi MoD / Breaking Defense',
+    source: 'IDF [B2]',
   },
   {
     id: 'uae',
@@ -87,40 +74,97 @@ const ALLIED_FEEDS = [
     borderColor: 'border-red-500/30',
     bgColor: 'from-red-500/10',
     stats: [
-      { label: 'BM INTERCEPTED', value: 165, icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
-      { label: 'CRUISE DESTROYED', value: 2, icon: Rocket, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
-      { label: 'DRONES INTERCEPTED', value: 541, icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
-      { label: 'DRONES PENETRATED', value: 35, icon: Crosshair, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'BM FIRED AT', value: 165, icon: Rocket, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+      { label: 'CRUISE FIRED AT', value: 2, icon: Rocket, color: 'text-cyan-400', bg: 'bg-cyan-500/20' },
+      { label: 'DRONES FIRED AT', value: 541, icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+      { label: 'DRONES PENETRATED', value: 21, icon: Crosshair, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'KIA', value: 3, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'WIA', value: 58, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
     ],
-    source: 'UAE MoD / Gulf News',
+    source: 'Al Jazeera / UAE MoD [A2]',
+  },
+  {
+    id: 'kuwait',
+    name: 'KUWAIT',
+    flag: '🇰🇼',
+    color: 'text-green-400',
+    borderColor: 'border-green-500/30',
+    bgColor: 'from-green-500/10',
+    stats: [
+      { label: 'BM INTERCEPTED', value: 97, icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
+      { label: 'DRONES INTERCEPTED', value: 283, icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+      { label: 'KIA', value: 1, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'WIA', value: 32, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+    ],
+    source: 'Al Jazeera / Kuwait govt [A2]',
+  },
+  {
+    id: 'bahrain',
+    name: 'BAHRAIN',
+    flag: '🇧🇭',
+    color: 'text-yellow-400',
+    borderColor: 'border-yellow-500/30',
+    bgColor: 'from-yellow-500/10',
+    stats: [
+      { label: 'MISSILES INTERCEPTED', value: 45, icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
+      { label: 'DRONES INTERCEPTED', value: 9, icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+      { label: 'KIA', value: 1, icon: Target, color: 'text-red-400', bg: 'bg-red-500/20' },
+      { label: 'WIA', value: 4, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+    ],
+    source: 'Al Jazeera [B2]',
+  },
+  {
+    id: 'ksa',
+    name: 'KSA',
+    flag: '🇸🇦',
+    color: 'text-emerald-400',
+    borderColor: 'border-emerald-500/30',
+    bgColor: 'from-emerald-500/10',
+    stats: [
+      { label: 'PSAB STATUS', value: 'HIGH ALERT', icon: Shield, color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+      { label: 'CONFIRMED ATTACKS', value: 'NIL', icon: Target, color: 'text-[var(--palantir-text-muted)]', bg: 'bg-white/5' },
+      { label: '27 US BASES TGT [D5]', value: 'IRGC CLAIM', icon: Rocket, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+    ],
+    source: 'NO VERIFIED SOURCE — IRGC claim only [D5]',
+  },
+  {
+    id: 'qatar',
+    name: 'QATAR',
+    flag: '🇶🇦',
+    color: 'text-purple-400',
+    borderColor: 'border-purple-500/30',
+    bgColor: 'from-purple-500/10',
+    stats: [
+      { label: 'MISSILES INTERCEPTED', value: 65, icon: Shield, color: 'text-green-400', bg: 'bg-green-500/20' },
+      { label: 'DRONES INTERCEPTED', value: 12, icon: Plane, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+      { label: 'WIA', value: 16, icon: Target, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+    ],
+    source: 'Al Jazeera [B2]',
   },
 ];
 
 // Cyber operations metrics — Operation Epic Fury / Roar of the Lion
-// Iranian cyber groups activated in retaliation + Allied offensive cyber ops
-// Sources: CISA, Microsoft MSTIC, Mandiant, CrowdStrike, Unit 42, CENTCOM
+// Verified: Electronic warfare in Strait of Hormuz (Fox News)
+// Verified: Iranian state broadcaster struck and dismantled (IDF)
+// Iranian APT group names from public threat intel reporting
 const CYBER_METRICS = {
   allied: {
-    label: 'ALLIED CYBER OPS',
+    label: 'ALLIED CYBER/EW OPS',
     color: 'text-green-400',
     ops: [
-      { label: 'SCADA/ICS Intrusions', value: 7, desc: 'Natanz, Fordow, Bushehr, Arak, Isfahan UCF, Abadan, Kharg' },
-      { label: 'C2 Network Disrupted', value: 3, desc: 'IRGC tactical comms, Air defense network, Navy C2' },
-      { label: 'GPS/EW Jamming Zones', value: 12, desc: 'Active across W. Iran theater' },
-      { label: 'DDoS Targets Offline', value: 47, desc: 'Iranian ISPs, govt portals, IRGC telecom' },
-      { label: 'Wiper Deployments', value: 2, desc: 'IRGC intel servers, nuclear program networks' },
+      { label: 'EW Strait of Hormuz', value: 1, desc: 'Electronic warfare activity confirmed (Fox News)' },
+      { label: 'State Broadcaster', value: 1, desc: 'Iranian state broadcaster struck and dismantled (IDF)' },
     ],
   },
   iranian: {
     label: 'IRANIAN CYBER THREATS',
     color: 'text-red-400',
     groups: [
-      { name: 'CyberAv3ngers', target: 'US/GCC SCADA/ICS', status: 'active', severity: 'critical' },
-      { name: 'APT42 (Charming Kitten)', target: 'US/IL govt credentials', status: 'active', severity: 'high' },
-      { name: 'MuddyWater', target: 'GCC telecom/energy', status: 'active', severity: 'high' },
-      { name: 'Void Manticore (Storm-842)', target: 'IL infrastructure wiper', status: 'active', severity: 'critical' },
-      { name: 'Cotton Sandstorm', target: 'US media / disinfo ops', status: 'detected', severity: 'medium' },
-      { name: 'Agrius (Pink Sandstorm)', target: 'IL Diamond/tech sector', status: 'active', severity: 'high' },
+      { name: 'CyberAv3ngers', target: 'US/GCC water & power SCADA', status: 'active', severity: 'critical' },
+      { name: 'APT42 (Charming Kitten)', target: 'US/IL govt credentials phishing', status: 'active', severity: 'high' },
+      { name: 'MuddyWater', target: 'GCC telecom/energy backdoors', status: 'active', severity: 'high' },
+      { name: 'Void Manticore (Storm-842)', target: 'Israeli infrastructure wiper', status: 'active', severity: 'critical' },
+      { name: 'Cotton Sandstorm', target: 'US social media disinfo ops', status: 'active', severity: 'high' },
     ],
   },
 };
@@ -151,10 +195,20 @@ function CyberThreatRow({ group }: { group: typeof CYBER_METRICS.iranian.groups[
 
 export function AttackStatsPanel() {
   const { stats, history, interceptRate } = useRealtimeStats();
-  const [metricsOpen, setMetricsOpen] = useState(false);
-  const [alliedOpen, setAlliedOpen] = useState<Record<string, boolean>>({});
-  const [cyberOpen, setCyberOpen] = useState(false);
+  const [metricsOpen, setMetricsOpen] = useState(() => {
+    try { return localStorage.getItem('roar-metrics-open') === 'true'; } catch {} return false;
+  });
+  const [alliedOpen, setAlliedOpen] = useState<Record<string, boolean>>(() => {
+    try { const s = localStorage.getItem('roar-allied-open'); if (s) return JSON.parse(s); } catch {} return {};
+  });
+  const [cyberOpen, setCyberOpen] = useState(() => {
+    try { return localStorage.getItem('roar-cyber-open') === 'true'; } catch {} return false;
+  });
   const [cyberPulse, setCyberPulse] = useState(0);
+
+  useEffect(() => { localStorage.setItem('roar-metrics-open', String(metricsOpen)); }, [metricsOpen]);
+  useEffect(() => { localStorage.setItem('roar-allied-open', JSON.stringify(alliedOpen)); }, [alliedOpen]);
+  useEffect(() => { localStorage.setItem('roar-cyber-open', String(cyberOpen)); }, [cyberOpen]);
 
   // Simulate ongoing cyber activity counter
   useEffect(() => {
@@ -225,6 +279,113 @@ export function AttackStatsPanel() {
               <StatCard icon={<Crosshair className="w-3 h-3 text-rose-400" />} label="CRUISE" value={stats.cruise} color="text-rose-400" bgColor="bg-rose-500/20" small />
               <StatCard icon={<Eye className="w-3 h-3 text-teal-400" />} label="SABOTAGE" value={stats.sabotage} color="text-teal-400" bgColor="bg-teal-500/20" small />
 
+              {/* Source Attribution — Attacks by verified source */}
+              <div className="rounded-lg bg-black/30 border border-[var(--palantir-border)]/50 p-3">
+                <div className="text-[10px] font-mono text-[var(--palantir-text-muted)] uppercase tracking-wider mb-2">
+                  Source Attribution — Iranian Attacks on Coalition
+                </div>
+                <div className="space-y-1.5">
+                  {/* Al Jazeera — primary source for Gulf attacks */}
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded bg-amber-500/5 border border-amber-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span className="text-[9px] font-mono text-amber-400 font-bold">AL JAZEERA [B2]</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold">1,219</span>
+                  </div>
+                  <div className="pl-4 space-y-0.5">
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>UAE: 165 BM + 2 cruise + 541 drones</span><span className="text-amber-400">708</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Kuwait: 97 BM + 283 drones</span><span className="text-amber-400">380</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Qatar: 65 missiles + 12 drones</span><span className="text-amber-400">77</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Bahrain: 45 missiles + 9 drones</span><span className="text-amber-400">54</span>
+                    </div>
+                  </div>
+
+                  {/* Reuters — US operations */}
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded bg-orange-500/5 border border-orange-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                      <span className="text-[9px] font-mono text-orange-400 font-bold">REUTERS [A2]</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-orange-400 font-bold">COALITION OPS</span>
+                  </div>
+                  <div className="pl-4 space-y-0.5">
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>US targets hit (2 days)</span><span className="text-orange-400">1,000+</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Ships sunk</span><span className="text-orange-400">9</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Iran KIA (Red Crescent) [B3]</span><span className="text-orange-400">555</span>
+                    </div>
+                  </div>
+
+                  {/* IDF */}
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded bg-cyan-500/5 border border-cyan-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      <span className="text-[9px] font-mono text-cyan-400 font-bold">IDF [B2]</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold">IAF STRIKES</span>
+                  </div>
+                  <div className="pl-4 space-y-0.5">
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Munitions dropped</span><span className="text-cyan-400">1,200+</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Iranian provinces hit</span><span className="text-cyan-400">24/31</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Strike operations</span><span className="text-cyan-400">30+</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>Security leaders KIA</span><span className="text-cyan-400">7</span>
+                    </div>
+                  </div>
+
+                  {/* IRGC Claims — adversary */}
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded bg-red-500/5 border border-red-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      <span className="text-[9px] font-mono text-red-400 font-bold">IRGC CLAIMS [D5]</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-red-400 font-bold">UNVERIFIED</span>
+                  </div>
+                  <div className="pl-4 space-y-0.5">
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>US bases targeted (claim)</span><span className="text-red-400">27</span>
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-[var(--palantir-text-muted)]">
+                      <span>BMs at USS Lincoln (claim)</span><span className="text-red-400">4</span>
+                    </div>
+                  </div>
+
+                  {/* Total estimation */}
+                  <div className="mt-2 pt-2 border-t border-[var(--palantir-border)]/30">
+                    <div className="flex justify-between px-2">
+                      <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">GULF CONFIRMED TOTAL</span>
+                      <span className="text-[10px] font-mono font-bold text-green-400">1,219</span>
+                    </div>
+                    <div className="flex justify-between px-2 mt-0.5">
+                      <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">+ ISRAEL / OTHER [EST]</span>
+                      <span className="text-[10px] font-mono font-bold text-yellow-400">~281</span>
+                    </div>
+                    <div className="flex justify-between px-2 mt-0.5">
+                      <span className="text-[9px] font-mono text-amber-400 font-bold">TOTAL OPS [EST]</span>
+                      <span className="text-[10px] font-mono font-bold text-amber-400">1,500</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Intercept Rate */}
               <div className="rounded-lg bg-black/30 border border-[var(--palantir-border)]/50 p-3">
                 <div className="flex items-center justify-between mb-2">
@@ -279,7 +440,7 @@ export function AttackStatsPanel() {
               <div className="rounded-lg bg-black/30 border border-[var(--palantir-border)]/50 p-3">
                 <div className="text-[10px] font-mono text-[var(--palantir-text-muted)] uppercase tracking-wider mb-2">Force Status</div>
                 <div className="space-y-1.5">
-                  <ForceBar label="SORTIES" value={stats.sorties} max={500} color="bg-blue-400" />
+                  <ForceBar label="SORTIES" value={stats.sorties} max={1000} color="bg-blue-400" />
                   <ForceBar label="TARGETS HIT" value={stats.targetsDamaged} max={22} color="bg-orange-400" />
                   <ForceBar label="NEUTRALIZED" value={stats.targetsNeutralized} max={22} color="bg-green-400" />
                 </div>

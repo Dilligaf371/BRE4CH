@@ -21,65 +21,107 @@ export interface StatsHistory {
   intercepted: number;
 }
 
-// Verified data — Iran's Operation True Promise 4 retaliation (Mar 1, 2026)
-// In response to US-Israeli Operation Epic Fury / Roaring Lion (Feb 28, 2026)
-// Iran attacked Israel + all GCC states + US bases across 27 locations
-// Sources: CENTCOM, UAE MoD, Gulf News, Kuwait govt, Bahrain MoD, Jordan govt, CNN, NPR, Breaking Defense
+// =============================================================================
+// Day 3 (Mar 3, 2026) — Operation Epic Fury / Roar of the Lion
+// Iran True Promise 4 retaliation — cumulative tally (Feb 28 - Mar 3)
+//
+// NATO ADMIRALTY SOURCE CLASSIFICATION (Reliability / Credibility):
+//   A1 = Completely reliable / Confirmed        (multiple independent sources)
+//   A2 = Completely reliable / Probably true     (Reuters single-source)
+//   B2 = Usually reliable / Probably true        (IDF, Al Jazeera — operational bias possible)
+//   B3 = Usually reliable / Possibly true        (Red Crescent — hard to verify in warzone)
+//   C3 = Fairly reliable / Possibly true         (Fox News — editorial bias)
+//   D5 = Not usually reliable / Improbable       (IRGC claims — adversary propaganda)
+//   E6 = Unreliable / Cannot be judged           (unverified social media)
+//
+// METHODOLOGY: Only Reuters, Al Jazeera, IDF, Fox News used as primary sources.
+// Values marked [EST] are estimates based on confirmed subtotals + reasonable extrapolation.
+// Values marked [CONFIRMED] have direct source attribution.
+// =============================================================================
 const REAL_BASELINE: AttackStats = {
-  // Known intercept tallies by country (confirmed by respective govts):
-  // UAE: 165 BM + 2 cruise + 541 drones = 708 (UAE MoD / Gulf News)
-  // Kuwait: 97 BM + 283 drones = 380 (Kuwait govt)
-  // Bahrain: 45 missiles + 9 drones = 54 (Bahrain MoD)
-  // Jordan: 13 BM + 49 drones = 62 (Jordan govt)
-  // Qatar: 18 combined = 18 (Qatar govt)
-  // Saudi Arabia: confirmed attacks on Riyadh + Eastern Province (numbers not released)
-  // Israel: Arrow/DS/Iron Dome active, majority intercepted (IDF)
-  // US: "hundreds" intercepted (CENTCOM)
-  // Total confirmed from 5 GCC countries alone: 1,222+
-  total: 1500,        // Conservative estimate including Israel + Saudi (confirmed 1,222+ from 5 countries)
-  ballistic: 350,     // 165 (UAE) + 97 (Kuwait) + 45 (Bahrain) + 13 (Jordan) + 18 (Qatar) + Israel/Saudi
-  drone: 1100,        // 541 (UAE) + 283 (Kuwait) + 9 (Bahrain) + 49 (Jordan) + Israel/Saudi + others
-  cyber: 12,          // IRGC-linked cyber ops ongoing (CyberAv3ngers, APT42, MuddyWater)
-  artillery: 0,       // Direct Iran launches — proxy rockets tracked separately
-  cruise: 5,          // 2 (UAE confirmed) + others
-  sabotage: 0,
+  // ── TOTAL IRANIAN ATTACKS ON COALITION ──
+  // [CONFIRMED] Gulf subtotal (Al Jazeera / govt sources — B2):
+  //   UAE: 165 BM + 2 cruise + 541 drones = 708
+  //   Kuwait: 97 BM + 283 drones = 380
+  //   Bahrain: 45 missiles + 9 drones = 54
+  //   Qatar: 65 missiles + 12 drones = 77
+  //   Gulf confirmed subtotal: 1,219
+  // [EST] Israel: multiple waves — specific munition count not published (IDF — B2)
+  // [EST] 27 US bases targeted per IRGC claim (Al Jazeera — D5 for IRGC claim)
+  // TOTAL = 1,219 confirmed + ~280 estimated (Israel/other) ≈ 1,500
+  total: 1500, // [EST] — Gulf confirmed 1,219 + Israel/other ~280
 
-  // Interception — GCC countries reported high intercept rates
-  // UAE: 541/576 drones = 94% drone intercept; 132/137 BM Day 1 = 96% BM intercept
-  // Overall coalition intercept rate estimated ~85-90% (some penetrated — 35 drones hit UAE, 6 KIA Israel)
-  intercepted: 1300,  // ~87% overall intercept rate across coalition
+  // ── BALLISTIC MISSILES ──
+  // [CONFIRMED] Gulf BM (Al Jazeera — B2):
+  //   UAE 165 + Kuwait 97 + Bahrain 45 + Qatar 65 = 372
+  // [EST] Israel BM waves — warhead near Temple Mount, 40+ buildings (Al Jazeera — B2)
+  // [D5] IRGC claims 4 BMs at USS Abraham Lincoln (Al Jazeera citing IRGC — D5)
+  ballistic: 400, // [EST] — Gulf confirmed 372 + Israel/other ~28
 
-  last24h: 1500,      // All within 36h window
+  // ── DRONES / UAV ──
+  // [CONFIRMED] Gulf drones (Al Jazeera — B2):
+  //   UAE 541 + Kuwait 283 + Bahrain 9 + Qatar 12 = 845
+  // [EST] Israel, US bases, Cyprus British base (Al Jazeera / Fox News — B2/C3)
+  drone: 900, // [EST] — Gulf confirmed 845 + Israel/Cyprus/other ~55
 
-  // Allied offensive — Operation Epic Fury / Roaring Lion
-  // IAF: 1,200+ munitions dropped across 24/31 Iranian provinces (IDF)
-  // USAF: B-2, B-52, F-35, F-15E strike packages (CENTCOM)
-  sorties: 500,       // Coalition strike + intercept sorties
+  // ── CYBER ──
+  // No specific attack count from verified sources — APT groups reported active (CISA/MSTIC)
+  cyber: 0, // [CONFIRMED] — no quantifiable data
 
-  // Damage from Iranian strikes (penetrations)
-  // UAE: 35 drones hit, material damage, 3 KIA 58 WIA (UAE MoD)
-  // Israel: missile hit residential building near Jerusalem, 6 KIA (IDF/police)
-  // US: 4 KIA 5 WIA (CENTCOM)
-  targetsDamaged: 8,  // Multiple bases/facilities took some hits
-  targetsNeutralized: 0,
+  // ── ARTILLERY / ROCKETS (non-BM, non-cruise) ──
+  // [CONFIRMED] Hezbollah: 200+ rockets at northern Israel (Al Jazeera — B2)
+  // [B2] Iraq-based militia rockets at US bases (Reuters — A2)
+  // [B2] Houthi anti-ship missiles Red Sea (Al Jazeera — B2)
+  artillery: 200, // [EST] — Hezbollah 200+ confirmed, militia/Houthi additional
+
+  // ── CRUISE MISSILES ──
+  // [CONFIRMED] UAE: 2 cruise missiles confirmed (Al Jazeera / UAE MoD — A2)
+  cruise: 2, // [CONFIRMED]
+
+  // ── SABOTAGE ──
+  // No confirmed sabotage operations from any verified source
+  sabotage: 0, // [CONFIRMED] — none reported
+
+  // ── INTERCEPTS ──
+  // [CONFIRMED] Gulf intercepts (Al Jazeera — B2):
+  //   UAE: ~680+ (520 drones + most of 167 BM/cruise — 21 drones penetrated)
+  //   Kuwait: 380 all intercepted
+  //   Bahrain: 54 all shot down
+  //   Qatar: ~70 most intercepted
+  //   Gulf confirmed: ~1,184
+  // [CONFIRMED] Israel: Arrow-3 exo-atmospheric intercepts (IDF — B2)
+  intercepted: 1200, // [EST] — Gulf confirmed 1,184 + Israel ~16
+
+  // ── LAST 24H ──
+  // [B2] 7th/8th waves of True Promise 4 ongoing (Al Jazeera)
+  // No specific 24h breakdown published
+  last24h: 400, // [EST] — based on wave frequency reporting
+
+  // ── COALITION SORTIES ──
+  // [CONFIRMED] US hit 1,000 targets in first 2 days (Reuters — A2)
+  // [CONFIRMED] IDF: 1,200+ munitions, 30+ strike ops across 24/31 provinces (IDF — B2)
+  // [A2] Trump: 9 naval ships sunk (Reuters)
+  sorties: 800, // [EST] — extrapolated from 1,000+ targets / 30+ ops
+
+  // ── COALITION TARGETS DAMAGED (by Iranian strikes) ──
+  // [CONFIRMED] Dubai Intl Airport — damaged/shut (Fox News — C3)
+  // [CONFIRMED] Kuwait Intl Airport — drone hit (Fox News — C3)
+  // [CONFIRMED] Burj Al Arab — fire from intercepted drone debris (Al Jazeera — B2)
+  // [CONFIRMED] Jebel Ali Port — berth fire (Al Jazeera — B2)
+  // [CONFIRMED] Tel Aviv — 40+ buildings (Al Jazeera — B2)
+  // [CONFIRMED] Cyprus — British air base hit (Al Jazeera — B2)
+  // [B2] Ali al-Salem AB attacked (Al Jazeera)
+  // [B2] 5th Fleet HQ targeted (Al Jazeera)
+  targetsDamaged: 8, // [CONFIRMED] — 8 specific locations
+
+  // ── MAJOR INFRASTRUCTURE NEUTRALIZED ──
+  // [CONFIRMED] Dubai Intl Airport — shut down 3 times (Fox News — C3)
+  // Kuwait airport damaged but NOT shut down — single drone hit
+  targetsNeutralized: 1, // [CONFIRMED] — Dubai airport only. Kuwait downgraded to damaged.
 };
 
 export function useRealtimeStats() {
-  const [stats, setStats] = useState<AttackStats>({
-    total: 0,
-    ballistic: 0,
-    drone: 0,
-    cyber: 0,
-    artillery: 0,
-    cruise: 0,
-    sabotage: 0,
-    intercepted: 0,
-    last24h: 0,
-    sorties: 0,
-    targetsDamaged: 0,
-    targetsNeutralized: 0,
-  });
-
+  const [stats] = useState<AttackStats>(REAL_BASELINE);
   const [history, setHistory] = useState<StatsHistory[]>([]);
 
   const pushHistory = useCallback((s: AttackStats) => {
@@ -90,53 +132,26 @@ export function useRealtimeStats() {
   }, []);
 
   useEffect(() => {
-    setStats(REAL_BASELINE);
-    pushHistory(REAL_BASELINE);
-
-    // Seed initial history with realistic ramp-up
+    // Seed history with stable values (slight visual variation for sparkline)
     const synth: StatsHistory[] = [];
     for (let i = 29; i >= 0; i--) {
+      const jitter = Math.round(Math.sin(i * 0.5) * 3);
       synth.push({
         timestamp: Date.now() - i * 4000,
-        total: REAL_BASELINE.total - (29 - i) * 2,
-        intercepted: REAL_BASELINE.intercepted - (29 - i) * 1,
+        total: REAL_BASELINE.total + jitter,
+        intercepted: REAL_BASELINE.intercepted + Math.round(jitter * 0.8),
       });
     }
     setHistory(synth);
 
-    // Slow realistic increment — conflict is ongoing, new events trickle in
+    // Update sparkline with minor visual jitter (no actual stat drift)
     const interval = setInterval(() => {
-      setStats((prev) => {
-        const roll = Math.random();
-        // ~40% chance of new event per tick (conflict is active but not constant)
-        if (roll > 0.4) return prev;
-
-        const newStats = { ...prev };
-        newStats.total += 1;
-        newStats.last24h += 1;
-
-        // Weight toward drones and artillery (most common in ongoing ops)
-        const typeRoll = Math.random();
-        if (typeRoll < 0.10) newStats.ballistic += 1;      // Rarer — stockpile depleting
-        else if (typeRoll < 0.35) newStats.drone += 1;      // Shahed drones still launching
-        else if (typeRoll < 0.45) newStats.cyber += 1;      // Occasional cyber ops
-        else if (typeRoll < 0.65) newStats.artillery += 1;   // Proxy rockets continue
-        else if (typeRoll < 0.80) newStats.cruise += 1;      // Cruise missile salvos
-        else newStats.sabotage += 1;                          // Rare sabotage ops
-
-        // ~67% intercept rate (realistic for multi-layer defense)
-        if (Math.random() < 0.673) newStats.intercepted += 1;
-
-        // Sorties continue at high pace
-        if (Math.random() > 0.4) newStats.sorties += 1;
-
-        // Very rare target status changes
-        if (Math.random() > 0.998) newStats.targetsDamaged += 1;
-
-        pushHistory(newStats);
-        return newStats;
+      pushHistory({
+        ...REAL_BASELINE,
+        total: REAL_BASELINE.total + Math.round(Math.sin(Date.now() / 3000) * 3),
+        intercepted: REAL_BASELINE.intercepted + Math.round(Math.sin(Date.now() / 3000) * 2),
       });
-    }, 2000 + Math.random() * 3000);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [pushHistory]);

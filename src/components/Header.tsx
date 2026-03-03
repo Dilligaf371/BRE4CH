@@ -1,4 +1,4 @@
-import { Shield, Radio, AlertTriangle, Crosshair, Zap } from 'lucide-react';
+import { Shield, Radio, AlertTriangle, Zap, Lock } from 'lucide-react';
 import { useMissionClock } from '../hooks/useMissionClock';
 import { CURRENT_PHASE, THREAT_LEVEL } from '../data/mockData';
 
@@ -21,9 +21,8 @@ export function Header() {
           <img src="/breach-logo.svg" alt="BRE4CH" className="w-40 h-auto" />
         </div>
         <div>
-          <h1 className="font-bold text-base tracking-tight text-[var(--palantir-text)] leading-tight flex items-center gap-2">
+          <h1 className="font-bold text-base tracking-tight text-[var(--palantir-text)] leading-tight">
             ROAR OF THE LION
-            <Crosshair className="w-3.5 h-3.5 text-red-400" />
           </h1>
           <p className="text-[10px] font-mono text-[var(--palantir-text-muted)] tracking-wider">
             OPERATION EPIC FURY // IRAN THEATRE // CENTCOM
@@ -36,6 +35,15 @@ export function Header() {
         <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-black/40 border border-[var(--palantir-border)]">
           <Radio className="w-3.5 h-3.5 text-green-400 animate-pulse" />
           <span className="text-[10px] font-mono text-green-400 tracking-wider">LIVE INTEL</span>
+        </div>
+
+        <div className="h-6 w-px bg-[var(--palantir-border)]" />
+
+        {/* Proton VPN Status */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30">
+          <Lock className="w-3.5 h-3.5 text-green-400" />
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[10px] font-mono text-green-400 tracking-wider">VPN ENCRYPTED</span>
         </div>
 
         <div className="h-6 w-px bg-[var(--palantir-border)]" />

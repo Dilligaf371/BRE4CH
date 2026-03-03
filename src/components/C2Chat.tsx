@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, User, Terminal, Wifi, WifiOff } from 'lucide-react';
+import { Send, User, Cpu, Wifi, WifiOff } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -9,17 +9,17 @@ interface Message {
   type?: 'text' | 'command' | 'alert';
 }
 
-async function streamUltronResponse(
+async function streamC2Response(
   message: string,
   onChunk: (text: string) => void,
   onDone: () => void,
   onError: (err: string) => void,
 ) {
   try {
-    const res = await fetch('/api/ultron', {
+    const res = await fetch('/api/c2', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, sessionId: 'roar-c2' }),
+      body: JSON.stringify({ message, sessionId: 'roar-c2-claude' }),
     });
 
     if (!res.ok || !res.body) {
@@ -64,30 +64,16 @@ async function streamUltronResponse(
   }
 }
 
-const ULTRON_STORAGE_KEY = 'roar-ultron-messages';
-const MAX_STORED = 50;
-
-function loadUltronMessages(): Message[] {
-  try {
-    const stored = localStorage.getItem(ULTRON_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
-    }
-  } catch { /* ignore */ }
-  return [
+export function C2Chat() {
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
       role: 'assistant',
-      content: "ULTRON OFSEC online. Operational intelligence system connected to BRE4CH.\n\nOperation Roar of the Lion - Phase III STRIKE active.\n\nConnected to AI Gateway. Ask your questions.",
+      content: "C2 AGENT online. Claude strategic intelligence module connected to BRE4CH.\n\nReady for deep analysis, planning, and operational support.\n\nAsk your questions.",
       timestamp: new Date(),
       type: 'text',
     },
-  ];
-}
-
-export function UltronChat() {
-  const [messages, setMessages] = useState<Message[]>(loadUltronMessages);
+  ]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
@@ -97,18 +83,11 @@ export function UltronChat() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages, isStreaming]);
 
-  // Persist messages
-  useEffect(() => {
-    try {
-      localStorage.setItem(ULTRON_STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
-    } catch { /* ignore */ }
-  }, [messages]);
-
   // Check backend health on mount
   useEffect(() => {
     fetch('/api/health')
       .then(r => r.json())
-      .then(d => setIsConnected(d.status === 'online' && d.apiKeyLoaded))
+      .then(d => setIsConnected(d.c2Online === true))
       .catch(() => setIsConnected(false));
   }, []);
 
@@ -128,7 +107,6 @@ export function UltronChat() {
     setIsStreaming(true);
     streamingMsgRef.current = '';
 
-    // Create placeholder assistant message
     const assistantId = (Date.now() + 1).toString();
     const placeholderMsg: Message = {
       id: assistantId,
@@ -139,7 +117,7 @@ export function UltronChat() {
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
-    streamUltronResponse(
+    streamC2Response(
       userInput,
       (text) => {
         streamingMsgRef.current += text;
@@ -149,18 +127,17 @@ export function UltronChat() {
       },
       () => {
         setIsStreaming(false);
-        // If no content was received, show fallback
         if (!streamingMsgRef.current) {
           setMessages(prev =>
             prev.map(m => m.id === assistantId
-              ? { ...m, content: 'Connection to ULTRON backend lost. Verify that the API server is running on port 3001.' }
+              ? { ...m, content: 'Connection to C2 backend lost. Verify API key and server status.' }
               : m
             )
           );
         }
       },
       (err) => {
-        console.error('[ULTRON]', err);
+        console.error('[C2]', err);
         setMessages(prev =>
           prev.map(m => m.id === assistantId
             ? { ...m, content: `[ERROR] ${err}` }
@@ -175,17 +152,17 @@ export function UltronChat() {
     <div className="flex flex-col h-full bg-[var(--palantir-surface)] border border-[var(--palantir-border)] rounded-lg overflow-hidden">
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-[var(--palantir-border)] flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/30 to-red-500/20 flex items-center justify-center border border-amber-500/40 overflow-hidden">
-          <img src="/ultron-logo.svg" alt="ULTRON" className="w-7 h-7" />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/30 to-blue-500/20 flex items-center justify-center border border-cyan-500/40">
+          <Cpu className="w-5 h-5 text-cyan-400" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-amber-400">ULTRON</span>
-            <span className="text-[10px] text-[var(--palantir-text-muted)] font-mono">OFSEC // AI AGENT</span>
+            <span className="font-bold text-sm text-cyan-400">C2</span>
+            <span className="text-[10px] text-[var(--palantir-text-muted)] font-mono">CLAUDE // STRATEGIC AI</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Terminal className="w-3 h-3 text-[var(--palantir-text-muted)]" />
-            <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">BRE4CH // AI INTEL</span>
+            <Cpu className="w-3 h-3 text-[var(--palantir-text-muted)]" />
+            <span className="text-[9px] font-mono text-[var(--palantir-text-muted)]">BRE4CH // DEEP ANALYSIS</span>
           </div>
         </div>
         <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${
@@ -218,12 +195,12 @@ export function UltronChat() {
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
             <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${
-              msg.role === 'user' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-amber-500/20 border border-amber-500/30'
+              msg.role === 'user' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-cyan-500/20 border border-cyan-500/30'
             }`}>
               {msg.role === 'user' ? (
                 <User className="w-3.5 h-3.5 text-blue-400" />
               ) : (
-                <img src="/ultron-logo.svg" alt="ULTRON" className="w-6 h-6" />
+                <Cpu className="w-4 h-4 text-cyan-400" />
               )}
             </div>
             <div className={`flex-1 max-w-[88%] ${msg.role === 'user' ? 'text-right' : ''}`}>
@@ -245,11 +222,10 @@ export function UltronChat() {
           </div>
         ))}
 
-        {/* Streaming indicator */}
         {isStreaming && (
           <div className="flex items-center gap-2 px-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-            <span className="text-[9px] font-mono text-amber-400/60">ULTRON processing...</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            <span className="text-[9px] font-mono text-cyan-400/60">C2 processing...</span>
           </div>
         )}
 
@@ -264,14 +240,14 @@ export function UltronChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask ULTRON..."
+            placeholder="Ask C2..."
             disabled={isStreaming}
-            className="flex-1 px-3 py-2 rounded-lg bg-black/40 border border-[var(--palantir-border)] text-xs text-[var(--palantir-text)] placeholder:text-[var(--palantir-text-muted)] focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 font-mono disabled:opacity-50"
+            className="flex-1 px-3 py-2 rounded-lg bg-black/40 border border-[var(--palantir-border)] text-xs text-[var(--palantir-text)] placeholder:text-[var(--palantir-text-muted)] focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 font-mono disabled:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={isStreaming || !input.trim()}
-            className="px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-3 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Send className="w-3.5 h-3.5" />
           </button>
